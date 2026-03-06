@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:scaleX="0.5"
+        android:scaleY="0.5"
+        android:translateX="27"
+        android:translateY="27">
+        <!-- Wolf silhouette -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M54,20
+                C54,20 60,30 65,35
+                C70,40 80,42 80,42
+                C80,42 75,50 70,55
+                C65,60 62,70 60,75
+                C58,80 54,85 54,85
+                C54,85 50,80 48,75
+                C46,70 43,60 38,55
+                C33,50 28,42 28,42
+                C28,42 38,40 43,35
+                C48,30 54,20 54,20Z"/>
+        <!-- Eyes -->
+        <path
+            android:fillColor="#FF0000"
+            android:pathData="M48,45 L52,45 L50,50 Z"/>
+        <path
+            android:fillColor="#FF0000"
+            android:pathData="M56,45 L60,45 L58,50 Z"/>
+    </group>
+</vector>

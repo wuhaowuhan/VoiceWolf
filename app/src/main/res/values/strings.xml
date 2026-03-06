@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VoiceWolf</string>
+    <string name="player_position">Player %1$d</string>
+    <string name="death_info">%1$d 号玩家出局</string>
+    <string name="vote_info">%1$d 号投票给%2$d 号</string>
+    <string name="game_info">游戏信息</string>
+    <string name="start_game">开始游戏</string>
+    <string name="reset_game">重置游戏</string>
+    <string name="select_player">选择玩家</string>
+    <string name="player_action">玩家操作</string>
+    <string name="confirm">确认</string>
+    <string name="cancel">取消</string>
+    
+    <!-- Game Modes Array -->
+    <string-array name="game_modes">
+        <item>机械狼通灵师</item>
+        <item>狼美骑士</item>
+    </string-array>
+    
+    <!-- Game Mode Descriptions -->
+    <string name="mode_mechanic_wolf">12 人局：3 小狼 + 机械狼 vs 通灵师 + 女巫 + 猎人 + 守卫 + 4 村民</string>
+    <string name="mode_wolf_beauty_knight">12 人局：3 小狼 + 狼美 vs 预言家 + 女巫 + 骑士 + 守卫 + 4 村民</string>
+</resources>
