@@ -14,11 +14,19 @@
     
     <!-- Game Modes Array -->
     <string-array name="game_modes">
-        <item>机械狼通灵师</item>
+        <item>标准场</item>
         <item>狼美骑士</item>
+        <item>机械狼通灵师</item>
+        <item>白狼王</item>
+        <item>石像鬼守墓人</item>
+        <item>预言家丘比特</item>
     </string-array>
     
     <!-- Game Mode Descriptions -->
-    <string name="mode_mechanic_wolf">12 人局：3 小狼 + 机械狼 vs 通灵师 + 女巫 + 猎人 + 守卫 + 4 村民</string>
+    <string name="mode_standard">12 人局：3 小狼 vs 预言家 + 女巫 + 猎人 + 守卫 + 4 村民</string>
     <string name="mode_wolf_beauty_knight">12 人局：3 小狼 + 狼美 vs 预言家 + 女巫 + 骑士 + 守卫 + 4 村民</string>
+    <string name="mode_mechanic_wolf">12 人局：3 小狼 + 机械狼 vs 通灵师 + 女巫 + 猎人 + 守卫 + 4 村民</string>
+    <string name="mode_white_wolf_king">12 人局：2 小狼 + 白狼王 vs 预言家 + 女巫 + 猎人 + 守卫 + 4 村民</string>
+    <string name="mode_gargoyle_gravedigger">12 人局：2 小狼 + 石像鬼 vs 预言家 + 女巫 + 猎人 + 守墓人 + 4 村民</string>
+    <string name="mode_fortune_teller">12 人局：2 小狼 + 丘比特 vs 预言家 + 女巫 + 猎人 + 守卫 + 4 村民</string>
 </resources>

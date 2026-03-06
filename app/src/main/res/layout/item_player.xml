@@ -47,5 +47,18 @@
             android:layout_margin="4dp"
             android:background="@drawable/status_indicator_alive"
             android:visibility="gone" />
+        
+        <!-- Role text -->
+        <TextView
+            android:id="@+id/roleText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="@android:color/transparent"
+            android:gravity="center"
+            android:textColor="@color/white"
+            android:textSize="8sp"
+            android:textStyle="bold"
+            android:visibility="visible" />
     </FrameLayout>
 </androidx.cardview.widget.CardView>

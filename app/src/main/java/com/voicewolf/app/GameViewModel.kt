@@ -55,6 +55,9 @@ class GameViewModel : ViewModel() {
     private val _speakerTimer = MutableLiveData("")
     val speakerTimer: LiveData<String> = _speakerTimer
 
+    private var speakerTimerTask: kotlinx.coroutines.Job? = null
+    private val coroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main)
+
     init {
         initializePlayers()
     }
@@ -92,6 +95,9 @@ class GameViewModel : ViewModel() {
         _speechRecords.value = mutableListOf()
         _voteRecords.value = mutableListOf()
 
+        // Cancel speaker timer
+        speakerTimerTask?.cancel()
+
         // Reset all players
         val resetPlayers = _players.value?.map { player ->
             player.copy(
@@ -123,6 +129,22 @@ class GameViewModel : ViewModel() {
                 playerId = 0,
                 description = "第${_currentRound.value}夜开始"
             ))
+        }
+    }
+    
+    // Get current game state description
+    fun getGameStateDescription(): String {
+        val round = _currentRound.value ?: 1
+        val isDay = _isDayPhase.value ?: false
+        return "第${round}${if (isDay) "天" else "夜"}"
+    }
+    
+    // Get current game state color
+    fun getGameStateColor(): Int {
+        return if (_isDayPhase.value ?: false) {
+            android.R.color.holo_blue_light
+        } else {
+            android.R.color.holo_purple
         }
     }
 
@@ -214,7 +236,7 @@ class GameViewModel : ViewModel() {
     }
 
     // Speech record methods
-    fun addSpeechRecord(playerId: Int, round: Int, summary: String) {
+    fun addSpeechRecord(playerId: Int, round: Int, summary: String, duration: Int = 0, type: SpeechRecord.SpeechType = SpeechRecord.SpeechType.NORMAL) {
         val currentRecords = _speechRecords.value ?: mutableListOf()
 
         // Check if record exists for this player and round
@@ -224,13 +246,19 @@ class GameViewModel : ViewModel() {
 
         if (existingIndex >= 0) {
             // Update existing
-            currentRecords[existingIndex] = currentRecords[existingIndex].copy(summary = summary)
+            currentRecords[existingIndex] = currentRecords[existingIndex].copy(
+                summary = summary,
+                duration = duration,
+                type = type
+            )
         } else {
             // Add new
             currentRecords.add(SpeechRecord(
                 round = round,
                 playerId = playerId,
-                summary = summary
+                summary = summary,
+                duration = duration,
+                type = type
             ))
         }
 
@@ -255,10 +283,68 @@ class GameViewModel : ViewModel() {
             ""
         }
     }
+    
+    // Get vote statistics for current round
+    fun getVoteStatistics(): Map<Int, Int> {
+        val currentRound = _currentRound.value ?: 1
+        val roundVotes = _voteRecords.value?.filter { it.round == currentRound } ?: emptyList()
+        
+        val voteCounts = mutableMapOf<Int, Int>()
+        roundVotes.forEach {
+            voteCounts[it.targetId] = voteCounts.getOrDefault(it.targetId, 0) + 1
+        }
+        
+        return voteCounts
+    }
+    
+    // Get player with most votes in current round
+    fun getMostVotedPlayer(): Pair<Int, Int>? {
+        val voteCounts = getVoteStatistics()
+        return voteCounts.maxByOrNull { it.value }?.toPair()
+    }
+    
+    // Get vote history for all rounds
+    fun getVoteHistory(): Map<Int, Map<Int, Int>> {
+        val allVotes = _voteRecords.value ?: emptyList()
+        val roundVotes = mutableMapOf<Int, MutableMap<Int, Int>>()
+        
+        allVotes.forEach {
+            if (!roundVotes.containsKey(it.round)) {
+                roundVotes[it.round] = mutableMapOf()
+            }
+            roundVotes[it.round]?.let {roundMap ->
+                roundMap[it.targetId] = roundMap.getOrDefault(it.targetId, 0) + 1
+            }
+        }
+        
+        return roundVotes
+    }
 
-    fun setSpeaker(playerId: Int) {
+    fun setSpeaker(playerId: Int, duration: Int = 180) {
         _speakerText.value = "【${playerId}号】发言中..."
-        _speakerTimer.value = "176 秒"
+        
+        // Cancel any existing timer
+        speakerTimerTask?.cancel()
+        
+        // Start new timer
+        var timeLeft = duration
+        _speakerTimer.value = "${timeLeft} 秒"
+        
+        speakerTimerTask = coroutineScope.launch {
+            while (timeLeft > 0) {
+                kotlinx.coroutines.delay(1000)
+                timeLeft--
+                _speakerTimer.value = "${timeLeft} 秒"
+            }
+            _speakerText.value = ""
+            _speakerTimer.value = ""
+        }
+    }
+    
+    fun stopSpeakerTimer() {
+        speakerTimerTask?.cancel()
+        _speakerText.value = ""
+        _speakerTimer.value = ""
     }
 
     fun addGameEvent(event: GameEvent) {

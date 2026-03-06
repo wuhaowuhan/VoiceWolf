@@ -15,4 +15,6 @@
     <color name="wolf_red">#FFE53935</color>
     <color name="background_dark">#FF1A1A2E</color>
     <color name="info_panel">#FF16213E</color>
+    <color name="info_panel_day">#FF1E3A8A</color>
+    <color name="info_panel_night">#FF4C1D95</color>
 </resources>
