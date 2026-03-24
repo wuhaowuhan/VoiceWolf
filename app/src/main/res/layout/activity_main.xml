@@ -19,12 +19,12 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <TextView
-            android:id="@+id/roundText"
+            android:id="@+id/dayText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="轮次: 1"
+            android:text="第1天"
             android:textColor="@color/white"
-            android:textSize="18sp"
+            android:textSize="22sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -163,7 +163,7 @@
                 android:layout_margin="4dp" />
         </LinearLayout>
 
-        <!-- Center Panel - Speech and Vote Records -->
+        <!-- Center Panel - All Days Records -->
         <androidx.cardview.widget.CardView
             android:id="@+id/centerPanel"
             android:layout_width="0dp"
@@ -177,70 +177,19 @@
             app:layout_constraintStart_toEndOf="@id/leftColumn"
             app:layout_constraintTop_toTopOf="parent">
 
-            <LinearLayout
+            <ScrollView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:orientation="vertical"
                 android:padding="8dp">
 
-                <!-- Speech Section -->
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📝 本轮发言"
-                    android:textColor="@color/white"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <ScrollView
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_marginTop="4dp"
-                    android:layout_weight="1">
-
-                    <TextView
-                        android:id="@+id/speechInfo"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="暂无发言记录"
-                        android:textColor="@color/gray_light"
-                        android:textSize="13sp" />
-                </ScrollView>
-
-                <!-- Vote Section -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="🗳️ 本轮投票"
-                    android:textColor="@color/white"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <ScrollView
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_marginTop="4dp"
-                    android:layout_weight="1">
-
-                    <TextView
-                        android:id="@+id/voteInfo"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="暂无投票记录"
-                        android:textColor="@color/gray_light"
-                        android:textSize="13sp" />
-                </ScrollView>
-
-                <!-- Vote Statistics -->
-                <TextView
-                    android:id="@+id/voteStats"
+                    android:id="@+id/allRecordsText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textColor="@color/teal_200"
-                    android:textSize="12sp" />
-            </LinearLayout>
+                    android:text="暂无记录"
+                    android:textColor="@color/gray_light"
+                    android:textSize="13sp" />
+            </ScrollView>
         </androidx.cardview.widget.CardView>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -259,26 +208,39 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAddSpeech"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:text="+ 记录发言"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1"
+            android:text="+ 发言"
             android:textSize="13sp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAddVote"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:text="+ 记录投票"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1"
+            android:text="+ 投票"
             android:textSize="13sp" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnHistory"
+            android:id="@+id/btnNextDay"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="历史"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1"
+            android:text="下一天"
+            android:textSize="13sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnReset"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="重置"
             android:textSize="13sp" />
     </LinearLayout>
 

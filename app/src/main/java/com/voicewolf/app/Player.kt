@@ -7,8 +7,7 @@ data class Player(
     val id: Int,
     val name: String = "Player $id",
     val isAlive: Boolean = true,
-    val role: Role = Role.UNKNOWN,
-    val votedFor: Int? = null
+    val role: Role = Role.UNKNOWN
 ) {
     enum class Role {
         UNKNOWN,
@@ -55,7 +54,7 @@ data class Player(
  * Represents a speech record for a player
  */
 data class SpeechRecord(
-    val round: Int,
+    val day: Int,
     val playerId: Int,
     val summary: String,
     val timestamp: Long = System.currentTimeMillis()
@@ -65,7 +64,7 @@ data class SpeechRecord(
  * Represents a vote record
  */
 data class VoteRecord(
-    val round: Int,
+    val day: Int,
     val voterId: Int,
     val targetId: Int,  // 0 = abstain
     val timestamp: Long = System.currentTimeMillis()

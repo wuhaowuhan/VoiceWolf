@@ -8,23 +8,6 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="轮次"
-        android:textColor="@color/white"
-        android:textSize="14sp" />
-
-    <EditText
-        android:id="@+id/editRound"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:inputType="number"
-        android:text="1"
-        android:textColor="@color/white"
-        android:textSize="16sp" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
         android:text="玩家"
         android:textColor="@color/white"
         android:textSize="14sp" />
@@ -38,7 +21,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="12dp"
         android:text="发言内容"
         android:textColor="@color/white"
         android:textSize="14sp" />

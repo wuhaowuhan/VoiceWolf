@@ -1,6 +1,7 @@
 package com.voicewolf.app
 
 import android.os.Bundle
+import android.widget.CheckBox
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -22,6 +23,9 @@ class MainActivity : AppCompatActivity() {
 
     // Player views map
     private val playerViews = mutableMapOf<Int, android.view.View>()
+
+    // Voter checkboxes for vote dialog
+    private val voterCheckboxes = mutableMapOf<Int, CheckBox>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,8 +90,12 @@ class MainActivity : AppCompatActivity() {
             showAddVoteDialog()
         }
 
-        binding.btnHistory.setOnClickListener {
-            showHistoryDialog()
+        binding.btnNextDay.setOnClickListener {
+            viewModel.nextDay()
+        }
+
+        binding.btnReset.setOnClickListener {
+            showResetConfirmDialog()
         }
 
         binding.btnMenu.setOnClickListener {
@@ -96,24 +104,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun observeViewModel() {
-        // Observe current round
-        viewModel.currentRound.observe(this) { round ->
-            binding.roundText.text = "轮次: $round"
+        // Observe current day
+        viewModel.currentDay.observe(this) { day ->
+            binding.dayText.text = "第${day}天"
         }
 
-        // Observe speech info
-        viewModel.speechInfo.observe(this) { info ->
-            binding.speechInfo.text = info
-        }
-
-        // Observe vote info
-        viewModel.voteInfo.observe(this) { info ->
-            binding.voteInfo.text = info
-        }
-
-        // Observe vote stats
-        viewModel.voteStats.observe(this) { stats ->
-            binding.voteStats.text = stats
+        // Observe all records text
+        viewModel.allRecordsText.observe(this) { text ->
+            binding.allRecordsText.text = text
         }
 
         // Observe players
@@ -136,27 +134,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showPlayerOptionsDialog(playerId: Int) {
-        val options = arrayOf("记录发言", "记录投票")
-        val currentRound = viewModel.currentRound.value ?: 1
+        val options = arrayOf("记录发言", "查看投票")
 
         AlertDialog.Builder(this)
             .setTitle("${playerId}号玩家")
             .setItems(options) { _, which ->
                 when (which) {
-                    0 -> showAddSpeechDialog(playerId, currentRound)
-                    1 -> showAddVoteDialog(playerId, currentRound)
+                    0 -> showAddSpeechDialog(playerId)
+                    1 -> showAddVoteDialog()
                 }
             }
             .setNegativeButton("取消", null)
             .show()
     }
 
-    private fun showAddSpeechDialog(playerId: Int? = null, round: Int? = null) {
+    private fun showAddSpeechDialog(playerId: Int? = null) {
         val dialogBinding = DialogAddSpeechBinding.inflate(layoutInflater)
-        val currentRound = round ?: viewModel.currentRound.value ?: 1
-
-        // Set round
-        dialogBinding.editRound.setText(currentRound.toString())
+        val currentDay = viewModel.currentDay.value ?: 1
 
         // Set player spinner
         val playerNames = (1..12).map { "${it}号" }.toTypedArray()
@@ -170,21 +164,20 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Load existing record if any
-        val existingRecord = playerId?.let { viewModel.getSpeechRecordForPlayer(it, currentRound) }
+        val existingRecord = playerId?.let { viewModel.getSpeechRecordForPlayer(it, currentDay) }
         if (existingRecord != null) {
             dialogBinding.editContent.setText(existingRecord.summary)
         }
 
         AlertDialog.Builder(this)
-            .setTitle("记录发言")
+            .setTitle("记录发言 - 第${currentDay}天")
             .setView(dialogBinding.root)
             .setPositiveButton("保存") { _, _ ->
                 val selectedPlayerId = dialogBinding.spinnerPlayer.selectedItemPosition + 1
-                val inputRound = dialogBinding.editRound.text.toString().toIntOrNull() ?: currentRound
                 val content = dialogBinding.editContent.text.toString()
 
                 if (content.isNotBlank()) {
-                    viewModel.addSpeechRecord(selectedPlayerId, inputRound, content)
+                    viewModel.addSpeechRecord(selectedPlayerId, currentDay, content)
                     Toast.makeText(this, "发言已记录", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -192,18 +185,9 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun showAddVoteDialog(playerId: Int? = null, round: Int? = null) {
+    private fun showAddVoteDialog() {
         val dialogBinding = DialogAddVoteBinding.inflate(layoutInflater)
-        val currentRound = round ?: viewModel.currentRound.value ?: 1
-
-        // Set round
-        dialogBinding.editRound.setText(currentRound.toString())
-
-        // Set voter spinner
-        val playerNames = (1..12).map { "${it}号" }.toTypedArray()
-        val adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_spinner_item, playerNames)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        dialogBinding.spinnerVoter.adapter = adapter
+        val currentDay = viewModel.currentDay.value ?: 1
 
         // Set target spinner (add abstain option)
         val targetNames = arrayOf("弃票") + (1..12).map { "${it}号" }.toTypedArray()
@@ -211,27 +195,67 @@ class MainActivity : AppCompatActivity() {
         targetAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         dialogBinding.spinnerTarget.adapter = targetAdapter
 
-        // Set selected voter if provided
-        if (playerId != null) {
-            dialogBinding.spinnerVoter.setSelection(playerId - 1)
+        // Create voter checkboxes in grid (4 columns, 3 rows)
+        voterCheckboxes.clear()
+        dialogBinding.votersGrid.removeAllViews()
+        for (i in 1..12) {
+            val checkBox = CheckBox(this).apply {
+                text = "${i}号"
+                setTextColor(resources.getColor(R.color.white, null))
+                layoutParams = androidx.gridlayout.widget.GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                    columnSpec = androidx.gridlayout.widget.GridLayout.spec(androidx.gridlayout.widget.GridLayout.UNDEFINED, 1f)
+                }
+            }
+            voterCheckboxes[i] = checkBox
+            dialogBinding.votersGrid.addView(checkBox)
         }
 
-        // Load existing record if any
-        val existingRecord = playerId?.let { viewModel.getVoteRecordForPlayer(it, currentRound) }
-        if (existingRecord != null) {
-            dialogBinding.spinnerTarget.setSelection(existingRecord.targetId) // 0 = abstain, 1-12 = players
+        // Load existing votes for this target when target changes
+        var lastTarget = -1
+        dialogBinding.spinnerTarget.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                val targetId = if (position == 0) 0 else position
+
+                // Save previous selections if valid target was selected
+                if (lastTarget > 0) {
+                    voterCheckboxes.filter { it.value.isChecked }.keys.forEach { voterId ->
+                        viewModel.recordVote(voterId, lastTarget, currentDay)
+                    }
+                }
+
+                // Clear all checkboxes
+                voterCheckboxes.values.forEach { it.isChecked = false }
+
+                // Load existing voters for this target
+                if (targetId > 0) {
+                    val existingVotes = viewModel.getVoteRecordsForDay(currentDay)
+                        .filter { it.targetId == targetId }
+                    existingVotes.forEach { vote ->
+                        voterCheckboxes[vote.voterId]?.isChecked = true
+                    }
+                }
+
+                lastTarget = targetId
+            }
+
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
         }
 
         AlertDialog.Builder(this)
-            .setTitle("记录投票")
+            .setTitle("记录投票 - 第${currentDay}天")
             .setView(dialogBinding.root)
-            .setPositiveButton("保存") { _, _ ->
-                val voterId = dialogBinding.spinnerVoter.selectedItemPosition + 1
-                val inputRound = dialogBinding.editRound.text.toString().toIntOrNull() ?: currentRound
+            .setPositiveButton("完成") { _, _ ->
                 val targetPosition = dialogBinding.spinnerTarget.selectedItemPosition
                 val targetId = if (targetPosition == 0) 0 else targetPosition
 
-                viewModel.recordVote(voterId, targetId, inputRound)
+                // Save votes for current target
+                if (targetId > 0) {
+                    voterCheckboxes.filter { it.value.isChecked }.keys.forEach { voterId ->
+                        viewModel.recordVote(voterId, targetId, currentDay)
+                    }
+                }
                 Toast.makeText(this, "投票已记录", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("取消", null)
@@ -240,17 +264,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun showHistoryDialog() {
         val dialogBinding = DialogHistoryBinding.inflate(layoutInflater)
-        val allRounds = viewModel.getAllRounds()
+        val allDays = viewModel.getAllDays()
 
-        if (allRounds.isEmpty()) {
+        if (allDays.isEmpty()) {
             dialogBinding.historyContent.text = "暂无历史记录"
         } else {
             val sb = StringBuilder()
-            allRounds.forEach { round ->
-                sb.append("═══ 第${round}轮 ═══\n\n")
+            allDays.forEach { day ->
+                sb.append("═══ 第${day}天 ═══\n\n")
 
                 // Speech records
-                val speeches = viewModel.getSpeechRecordsForRound(round)
+                val speeches = viewModel.getSpeechRecordsForDay(day)
                 if (speeches.isNotEmpty()) {
                     sb.append("【发言】\n")
                     speeches.forEach { record ->
@@ -259,7 +283,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 // Vote records
-                val votes = viewModel.getVoteRecordsForRound(round)
+                val votes = viewModel.getVoteRecordsForDay(day)
                 if (votes.isNotEmpty()) {
                     sb.append("【投票】\n")
                     votes.forEach { record ->
@@ -271,7 +295,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     sb.append("\n")
 
-                    // Vote stats for this round
+                    // Vote stats for this day
                     val voteCounts = mutableMapOf<Int, Int>()
                     votes.filter { it.targetId > 0 }.forEach {
                         voteCounts[it.targetId] = voteCounts.getOrDefault(it.targetId, 0) + 1
@@ -298,42 +322,34 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showMenuDialog() {
-        val currentRound = viewModel.currentRound.value ?: 1
-        val options = arrayOf(
-            "下一轮 (当前: $currentRound)",
-            "上一轮",
-            "跳转到指定轮次",
-            "重置游戏"
-        )
+        val options = arrayOf("查看历史", "跳转到指定天")
 
         AlertDialog.Builder(this)
             .setTitle("菜单")
             .setItems(options) { _, which ->
                 when (which) {
-                    0 -> viewModel.nextRound()
-                    1 -> viewModel.prevRound()
-                    2 -> showJumpRoundDialog()
-                    3 -> showResetConfirmDialog()
+                    0 -> showHistoryDialog()
+                    1 -> showJumpDayDialog()
                 }
             }
             .setNegativeButton("取消", null)
             .show()
     }
 
-    private fun showJumpRoundDialog() {
+    private fun showJumpDayDialog() {
         val input = android.widget.EditText(this)
         input.inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        input.setText(viewModel.currentRound.value.toString())
+        input.setText(viewModel.currentDay.value.toString())
 
         AlertDialog.Builder(this)
-            .setTitle("跳转到轮次")
+            .setTitle("跳转到指定天")
             .setView(input)
             .setPositiveButton("确定") { _, _ ->
-                val round = input.text.toString().toIntOrNull()
-                if (round != null && round >= 1) {
-                    viewModel.setRound(round)
+                val day = input.text.toString().toIntOrNull()
+                if (day != null && day >= 1) {
+                    viewModel.setDay(day)
                 } else {
-                    Toast.makeText(this, "请输入有效的轮次", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "请输入有效的天数", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("取消", null)

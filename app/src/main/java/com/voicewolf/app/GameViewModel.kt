@@ -10,9 +10,9 @@ import androidx.lifecycle.ViewModel
  */
 class GameViewModel : ViewModel() {
 
-    // Current round
-    private val _currentRound = MutableLiveData(1)
-    val currentRound: LiveData<Int> = _currentRound
+    // Current day
+    private val _currentDay = MutableLiveData(1)
+    val currentDay: LiveData<Int> = _currentDay
 
     // Players
     private val _players = MutableLiveData<List<Player>>(emptyList())
@@ -26,18 +26,13 @@ class GameViewModel : ViewModel() {
     private val _voteRecords = MutableLiveData<MutableList<VoteRecord>>(mutableListOf())
     val voteRecords: LiveData<MutableList<VoteRecord>> = _voteRecords
 
-    // Display info
-    private val _speechInfo = MutableLiveData("")
-    val speechInfo: LiveData<String> = _speechInfo
-
-    private val _voteInfo = MutableLiveData("")
-    val voteInfo: LiveData<String> = _voteInfo
-
-    private val _voteStats = MutableLiveData("")
-    val voteStats: LiveData<String> = _voteStats
+    // Display info - all records formatted
+    private val _allRecordsText = MutableLiveData("")
+    val allRecordsText: LiveData<String> = _allRecordsText
 
     init {
         initializePlayers()
+        updateDisplayInfo()
     }
 
     private fun initializePlayers() {
@@ -45,42 +40,36 @@ class GameViewModel : ViewModel() {
         _players.value = playerList
     }
 
-    // Round management
-    fun nextRound() {
-        _currentRound.value = (_currentRound.value ?: 1) + 1
-        updateDisplayInfo()
+    // Day management
+    fun nextDay() {
+        _currentDay.value = (_currentDay.value ?: 1) + 1
     }
 
-    fun prevRound() {
-        val current = _currentRound.value ?: 1
+    fun prevDay() {
+        val current = _currentDay.value ?: 1
         if (current > 1) {
-            _currentRound.value = current - 1
-            updateDisplayInfo()
+            _currentDay.value = current - 1
         }
     }
 
-    fun setRound(round: Int) {
-        if (round >= 1) {
-            _currentRound.value = round
-            updateDisplayInfo()
+    fun setDay(day: Int) {
+        if (day >= 1) {
+            _currentDay.value = day
         }
     }
 
     // Reset game
     fun resetGame() {
-        _currentRound.value = 1
+        _currentDay.value = 1
         _speechRecords.value = mutableListOf()
         _voteRecords.value = mutableListOf()
-        _speechInfo.value = ""
-        _voteInfo.value = ""
-        _voteStats.value = ""
+        _allRecordsText.value = ""
 
         // Reset all players
         val resetPlayers = _players.value?.map { player ->
             player.copy(
                 isAlive = true,
-                role = Player.Role.UNKNOWN,
-                votedFor = null
+                role = Player.Role.UNKNOWN
             )
         } ?: emptyList()
         _players.value = resetPlayers
@@ -88,12 +77,12 @@ class GameViewModel : ViewModel() {
     }
 
     // Speech record methods
-    fun addSpeechRecord(playerId: Int, round: Int, summary: String) {
+    fun addSpeechRecord(playerId: Int, day: Int, summary: String) {
         val currentRecords = _speechRecords.value ?: mutableListOf()
 
-        // Check if record exists for this player and round
+        // Check if record exists for this player and day
         val existingIndex = currentRecords.indexOfFirst {
-            it.playerId == playerId && it.round == round
+            it.playerId == playerId && it.day == day
         }
 
         if (existingIndex >= 0) {
@@ -104,7 +93,7 @@ class GameViewModel : ViewModel() {
         } else {
             // Add new
             currentRecords.add(SpeechRecord(
-                round = round,
+                day = day,
                 playerId = playerId,
                 summary = summary
             ))
@@ -116,22 +105,22 @@ class GameViewModel : ViewModel() {
 
     fun deleteSpeechRecord(record: SpeechRecord) {
         val currentRecords = _speechRecords.value ?: mutableListOf()
-        currentRecords.removeAll { it.playerId == record.playerId && it.round == record.round }
+        currentRecords.removeAll { it.playerId == record.playerId && it.day == record.day }
         _speechRecords.value = currentRecords
         updateDisplayInfo()
     }
 
     // Vote record methods
-    fun recordVote(voterId: Int, targetId: Int, round: Int) {
+    fun recordVote(voterId: Int, targetId: Int, day: Int) {
         val currentRecords = _voteRecords.value ?: mutableListOf()
 
-        // Remove existing vote for this voter in this round
-        currentRecords.removeAll { it.voterId == voterId && it.round == round }
+        // Remove existing vote for this voter in this day
+        currentRecords.removeAll { it.voterId == voterId && it.day == day }
 
         // Add new vote
         if (targetId > 0) {
             currentRecords.add(VoteRecord(
-                round = round,
+                day = day,
                 voterId = voterId,
                 targetId = targetId
             ))
@@ -143,45 +132,65 @@ class GameViewModel : ViewModel() {
 
     fun deleteVoteRecord(record: VoteRecord) {
         val currentRecords = _voteRecords.value ?: mutableListOf()
-        currentRecords.removeAll { it.voterId == record.voterId && it.round == record.round }
+        currentRecords.removeAll { it.voterId == record.voterId && it.day == record.day }
         _voteRecords.value = currentRecords
         updateDisplayInfo()
     }
 
-    // Update display info
+    // Update display info - all days
     private fun updateDisplayInfo() {
-        val currentRound = _currentRound.value ?: 1
+        val allDays = getAllDays()
 
-        // Update speech info
-        val speechRecords = _speechRecords.value?.filter { it.round == currentRound } ?: emptyList()
-        _speechInfo.value = if (speechRecords.isEmpty()) {
-            "暂无发言记录"
-        } else {
-            speechRecords.sortedBy { it.playerId }.joinToString("\n\n") {
-                "${it.playerId}号: ${it.summary}"
-            }
+        if (allDays.isEmpty()) {
+            _allRecordsText.value = "暂无记录"
+            return
         }
 
-        // Update vote info
-        val voteRecords = _voteRecords.value?.filter { it.round == currentRound } ?: emptyList()
-        _voteInfo.value = if (voteRecords.isEmpty()) {
-            "暂无投票记录"
-        } else {
-            voteRecords.sortedBy { it.voterId }.joinToString("  ") {
-                "${it.voterId}→${it.targetId}"
+        val sb = StringBuilder()
+        allDays.forEach { day ->
+            sb.append("【第${day}天】\n")
+
+            // Speech records
+            val speeches = getSpeechRecordsForDay(day)
+            sb.append("📝 发言: ")
+            if (speeches.isEmpty()) {
+                sb.append("无\n")
+            } else {
+                sb.append("\n")
+                speeches.forEach { record ->
+                    sb.append("  ${record.playerId}号: ${record.summary}\n")
+                }
             }
+
+            // Vote records
+            val votes = getVoteRecordsForDay(day)
+            sb.append("🗳️ 投票: ")
+            if (votes.isEmpty()) {
+                sb.append("无\n")
+            } else {
+                sb.append("\n")
+                // Vote info
+                sb.append("  ")
+                votes.forEach { record ->
+                    sb.append("${record.voterId}→${record.targetId}  ")
+                }
+                sb.append("\n")
+                // Vote stats
+                val voteCounts = mutableMapOf<Int, Int>()
+                votes.forEach { voteCounts[it.targetId] = voteCounts.getOrDefault(it.targetId, 0) + 1 }
+                if (voteCounts.isNotEmpty()) {
+                    sb.append("  统计: ")
+                    sb.append(voteCounts.entries.sortedByDescending { it.value }.joinToString("  ") {
+                        "${it.key}号(${it.value}票)"
+                    })
+                    sb.append("\n")
+                }
+            }
+
+            sb.append("\n")
         }
 
-        // Update vote stats
-        val voteCounts = mutableMapOf<Int, Int>()
-        voteRecords.forEach { voteCounts[it.targetId] = voteCounts.getOrDefault(it.targetId, 0) + 1 }
-        _voteStats.value = if (voteCounts.isEmpty()) {
-            ""
-        } else {
-            voteCounts.entries.sortedByDescending { it.value }.joinToString("  ") {
-                "${it.key}号: ${it.value}票"
-            }
-        }
+        _allRecordsText.value = sb.toString().trim()
     }
 
     // Helper methods
@@ -189,26 +198,26 @@ class GameViewModel : ViewModel() {
         return _players.value?.find { it.id == playerId }
     }
 
-    fun getSpeechRecordsForRound(round: Int): List<SpeechRecord> {
-        return _speechRecords.value?.filter { it.round == round }?.sortedBy { it.playerId } ?: emptyList()
+    fun getSpeechRecordsForDay(day: Int): List<SpeechRecord> {
+        return _speechRecords.value?.filter { it.day == day }?.sortedBy { it.playerId } ?: emptyList()
     }
 
-    fun getVoteRecordsForRound(round: Int): List<VoteRecord> {
-        return _voteRecords.value?.filter { it.round == round }?.sortedBy { it.voterId } ?: emptyList()
+    fun getVoteRecordsForDay(day: Int): List<VoteRecord> {
+        return _voteRecords.value?.filter { it.day == day }?.sortedBy { it.voterId } ?: emptyList()
     }
 
-    fun getSpeechRecordForPlayer(playerId: Int, round: Int): SpeechRecord? {
-        return _speechRecords.value?.find { it.playerId == playerId && it.round == round }
+    fun getSpeechRecordForPlayer(playerId: Int, day: Int): SpeechRecord? {
+        return _speechRecords.value?.find { it.playerId == playerId && it.day == day }
     }
 
-    fun getVoteRecordForPlayer(playerId: Int, round: Int): VoteRecord? {
-        return _voteRecords.value?.find { it.voterId == playerId && it.round == round }
+    fun getVoteRecordForPlayer(playerId: Int, day: Int): VoteRecord? {
+        return _voteRecords.value?.find { it.voterId == playerId && it.day == day }
     }
 
-    fun getAllRounds(): List<Int> {
-        val speechRounds = _speechRecords.value?.map { it.round } ?: emptyList()
-        val voteRounds = _voteRecords.value?.map { it.round } ?: emptyList()
-        return (speechRounds + voteRounds).distinct().sorted()
+    fun getAllDays(): List<Int> {
+        val speechDays = _speechRecords.value?.map { it.day } ?: emptyList()
+        val voteDays = _voteRecords.value?.map { it.day } ?: emptyList()
+        return (speechDays + voteDays).distinct().sorted()
     }
 
     // Player status
