@@ -6,33 +6,17 @@ import androidx.lifecycle.ViewModel
 
 /**
  * ViewModel for Werewolf game state management
+ * Simplified for player perspective - focuses on speech and vote recording
  */
 class GameViewModel : ViewModel() {
 
-    // Game state
-    private val _isGameStarted = MutableLiveData(false)
-    val isGameStarted: LiveData<Boolean> = _isGameStarted
-
+    // Current round
     private val _currentRound = MutableLiveData(1)
     val currentRound: LiveData<Int> = _currentRound
-
-    private val _isDayPhase = MutableLiveData(false)
-    val isDayPhase: LiveData<Boolean> = _isDayPhase
-
-    private val _selectedGameMode = MutableLiveData<GameMode>(GameMode.MECHANIC_WOLF)
-    val selectedGameMode: LiveData<GameMode> = _selectedGameMode
 
     // Players
     private val _players = MutableLiveData<List<Player>>(emptyList())
     val players: LiveData<List<Player>> = _players
-
-    // Selected player for actions
-    private val _selectedPlayer = MutableLiveData<Player?>(null)
-    val selectedPlayer: LiveData<Player?> = _selectedPlayer
-
-    // Game events
-    private val _gameEvents = MutableLiveData<MutableList<GameEvent>>(mutableListOf())
-    val gameEvents: LiveData<MutableList<GameEvent>> = _gameEvents
 
     // Speech records
     private val _speechRecords = MutableLiveData<MutableList<SpeechRecord>>(mutableListOf())
@@ -43,20 +27,14 @@ class GameViewModel : ViewModel() {
     val voteRecords: LiveData<MutableList<VoteRecord>> = _voteRecords
 
     // Display info
-    private val _deathInfo = MutableLiveData("")
-    val deathInfo: LiveData<String> = _deathInfo
+    private val _speechInfo = MutableLiveData("")
+    val speechInfo: LiveData<String> = _speechInfo
 
     private val _voteInfo = MutableLiveData("")
     val voteInfo: LiveData<String> = _voteInfo
 
-    private val _speakerText = MutableLiveData("")
-    val speakerText: LiveData<String> = _speakerText
-
-    private val _speakerTimer = MutableLiveData("")
-    val speakerTimer: LiveData<String> = _speakerTimer
-
-    private var speakerTimerTask: kotlinx.coroutines.Job? = null
-    private val coroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main)
+    private val _voteStats = MutableLiveData("")
+    val voteStats: LiveData<String> = _voteStats
 
     init {
         initializePlayers()
@@ -67,176 +45,50 @@ class GameViewModel : ViewModel() {
         _players.value = playerList
     }
 
-    // Game control methods
-    fun setGameMode(gameMode: GameMode) {
-        _selectedGameMode.value = gameMode
+    // Round management
+    fun nextRound() {
+        _currentRound.value = (_currentRound.value ?: 1) + 1
+        updateDisplayInfo()
     }
 
-    fun startGame() {
-        _isGameStarted.value = true
-        _currentRound.value = 1
-        _isDayPhase.value = false
-        addGameEvent(GameEvent(
-            type = GameEvent.EventType.CUSTOM,
-            playerId = 0,
-            description = "游戏开始！版型：${_selectedGameMode.value?.displayName}"
-        ))
+    fun prevRound() {
+        val current = _currentRound.value ?: 1
+        if (current > 1) {
+            _currentRound.value = current - 1
+            updateDisplayInfo()
+        }
     }
 
+    fun setRound(round: Int) {
+        if (round >= 1) {
+            _currentRound.value = round
+            updateDisplayInfo()
+        }
+    }
+
+    // Reset game
     fun resetGame() {
-        _isGameStarted.value = false
-        _isDayPhase.value = false
         _currentRound.value = 1
-        _deathInfo.value = ""
-        _voteInfo.value = ""
-        _speakerText.value = ""
-        _speakerTimer.value = ""
-        _gameEvents.value = mutableListOf()
         _speechRecords.value = mutableListOf()
         _voteRecords.value = mutableListOf()
-
-        // Cancel speaker timer
-        speakerTimerTask?.cancel()
+        _speechInfo.value = ""
+        _voteInfo.value = ""
+        _voteStats.value = ""
 
         // Reset all players
         val resetPlayers = _players.value?.map { player ->
             player.copy(
                 isAlive = true,
                 role = Player.Role.UNKNOWN,
-                votedFor = null,
-                wasVotedBy = mutableListOf()
+                votedFor = null
             )
         } ?: emptyList()
         _players.value = resetPlayers
-    }
-
-    fun toggleDayNight() {
-        val wasDay = _isDayPhase.value ?: false
-        _isDayPhase.value = !wasDay
-
-        if (!wasDay) {
-            // Now it's day
-            addGameEvent(GameEvent(
-                type = GameEvent.EventType.CUSTOM,
-                playerId = 0,
-                description = "第${_currentRound.value}天开始"
-            ))
-        } else {
-            // Now it's night, increment round
-            _currentRound.value = (_currentRound.value ?: 1) + 1
-            addGameEvent(GameEvent(
-                type = GameEvent.EventType.CUSTOM,
-                playerId = 0,
-                description = "第${_currentRound.value}夜开始"
-            ))
-        }
-    }
-    
-    // Get current game state description
-    fun getGameStateDescription(): String {
-        val round = _currentRound.value ?: 1
-        val isDay = _isDayPhase.value ?: false
-        return "第${round}${if (isDay) "天" else "夜"}"
-    }
-    
-    // Get current game state color
-    fun getGameStateColor(): Int {
-        return if (_isDayPhase.value ?: false) {
-            android.R.color.holo_blue_light
-        } else {
-            android.R.color.holo_purple
-        }
-    }
-
-    fun nextRound() {
-        _currentRound.value = (_currentRound.value ?: 1) + 1
-        addGameEvent(GameEvent(
-            type = GameEvent.EventType.CUSTOM,
-            playerId = 0,
-            description = "进入第${_currentRound.value}轮"
-        ))
-    }
-
-    // Player methods
-    fun selectPlayer(player: Player) {
-        _selectedPlayer.value = player
-    }
-
-    fun clearSelectedPlayer() {
-        _selectedPlayer.value = null
-    }
-
-    fun setPlayerRole(playerId: Int, role: Player.Role) {
-        val playerList = _players.value?.toMutableList() ?: return
-        val index = playerList.indexOfFirst { it.id == playerId }
-        if (index >= 0) {
-            playerList[index] = playerList[index].copy(role = role)
-            _players.value = playerList
-        }
-    }
-
-    fun markPlayerDead(playerId: Int) {
-        val playerList = _players.value?.toMutableList() ?: return
-        val index = playerList.indexOfFirst { it.id == playerId }
-        if (index >= 0 && playerList[index].isAlive) {
-            playerList[index] = playerList[index].copy(isAlive = false)
-            _players.value = playerList
-
-            addGameEvent(GameEvent(
-                type = GameEvent.EventType.DEATH,
-                playerId = playerId,
-                description = "${playerId}号玩家出局"
-            ))
-
-            updateDeathInfo()
-        }
-    }
-
-    fun recordVote(voterId: Int, targetId: Int) {
-        val playerList = _players.value?.toMutableList() ?: return
-
-        // Update voter
-        val voterIndex = playerList.indexOfFirst { it.id == voterId }
-        if (voterIndex >= 0) {
-            playerList[voterIndex] = playerList[voterIndex].copy(
-                votedFor = targetId
-            )
-        }
-
-        // Update target's wasVotedBy
-        val targetIndex = playerList.indexOfFirst { it.id == targetId }
-        if (targetIndex >= 0) {
-            val updatedWasVotedBy = playerList[targetIndex].wasVotedBy.toMutableList()
-            updatedWasVotedBy.add(voterId)
-            playerList[targetIndex] = playerList[targetIndex].copy(
-                wasVotedBy = updatedWasVotedBy
-            )
-        }
-
-        _players.value = playerList
-
-        // Add to vote records
-        val currentRecords = _voteRecords.value ?: mutableListOf()
-        currentRecords.add(VoteRecord(
-            round = _currentRound.value ?: 1,
-            voterId = voterId,
-            targetId = targetId
-        ))
-        _voteRecords.value = currentRecords
-
-        // Add game event
-        addGameEvent(GameEvent(
-            type = GameEvent.EventType.VOTE,
-            playerId = voterId,
-            targetId = targetId,
-            description = "${voterId}号投票给${targetId}号"
-        ))
-
-        updateVoteInfo()
+        updateDisplayInfo()
     }
 
     // Speech record methods
-    fun addSpeechRecord(playerId: Int, round: Int, summary: String, duration: Int = 0, type: SpeechRecord.SpeechType = SpeechRecord.SpeechType.NORMAL) {
+    fun addSpeechRecord(playerId: Int, round: Int, summary: String) {
         val currentRecords = _speechRecords.value ?: mutableListOf()
 
         // Check if record exists for this player and round
@@ -247,126 +99,125 @@ class GameViewModel : ViewModel() {
         if (existingIndex >= 0) {
             // Update existing
             currentRecords[existingIndex] = currentRecords[existingIndex].copy(
-                summary = summary,
-                duration = duration,
-                type = type
+                summary = summary
             )
         } else {
             // Add new
             currentRecords.add(SpeechRecord(
                 round = round,
                 playerId = playerId,
-                summary = summary,
-                duration = duration,
-                type = type
+                summary = summary
             ))
         }
 
         _speechRecords.value = currentRecords
+        updateDisplayInfo()
     }
 
-    // Info update methods
-    private fun updateDeathInfo() {
-        val deadPlayers = _players.value?.filter { !it.isAlive } ?: emptyList()
-        _deathInfo.value = if (deadPlayers.isNotEmpty()) {
-            "出局玩家：${deadPlayers.joinToString { "${it.id}号" }}"
-        } else {
-            ""
-        }
+    fun deleteSpeechRecord(record: SpeechRecord) {
+        val currentRecords = _speechRecords.value ?: mutableListOf()
+        currentRecords.removeAll { it.playerId == record.playerId && it.round == record.round }
+        _speechRecords.value = currentRecords
+        updateDisplayInfo()
     }
 
-    private fun updateVoteInfo() {
-        val votes = _players.value?.filter { it.votedFor != null } ?: emptyList()
-        _voteInfo.value = if (votes.isNotEmpty()) {
-            "投票记录：${votes.joinToString { "${it.id}→${it.votedFor}号" }}"
-        } else {
-            ""
+    // Vote record methods
+    fun recordVote(voterId: Int, targetId: Int, round: Int) {
+        val currentRecords = _voteRecords.value ?: mutableListOf()
+
+        // Remove existing vote for this voter in this round
+        currentRecords.removeAll { it.voterId == voterId && it.round == round }
+
+        // Add new vote
+        if (targetId > 0) {
+            currentRecords.add(VoteRecord(
+                round = round,
+                voterId = voterId,
+                targetId = targetId
+            ))
         }
+
+        _voteRecords.value = currentRecords
+        updateDisplayInfo()
     }
-    
-    // Get vote statistics for current round
-    fun getVoteStatistics(): Map<Int, Int> {
+
+    fun deleteVoteRecord(record: VoteRecord) {
+        val currentRecords = _voteRecords.value ?: mutableListOf()
+        currentRecords.removeAll { it.voterId == record.voterId && it.round == record.round }
+        _voteRecords.value = currentRecords
+        updateDisplayInfo()
+    }
+
+    // Update display info
+    private fun updateDisplayInfo() {
         val currentRound = _currentRound.value ?: 1
-        val roundVotes = _voteRecords.value?.filter { it.round == currentRound } ?: emptyList()
-        
+
+        // Update speech info
+        val speechRecords = _speechRecords.value?.filter { it.round == currentRound } ?: emptyList()
+        _speechInfo.value = if (speechRecords.isEmpty()) {
+            "暂无发言记录"
+        } else {
+            speechRecords.sortedBy { it.playerId }.joinToString("\n\n") {
+                "${it.playerId}号: ${it.summary}"
+            }
+        }
+
+        // Update vote info
+        val voteRecords = _voteRecords.value?.filter { it.round == currentRound } ?: emptyList()
+        _voteInfo.value = if (voteRecords.isEmpty()) {
+            "暂无投票记录"
+        } else {
+            voteRecords.sortedBy { it.voterId }.joinToString("  ") {
+                "${it.voterId}→${it.targetId}"
+            }
+        }
+
+        // Update vote stats
         val voteCounts = mutableMapOf<Int, Int>()
-        roundVotes.forEach {
-            voteCounts[it.targetId] = voteCounts.getOrDefault(it.targetId, 0) + 1
-        }
-        
-        return voteCounts
-    }
-    
-    // Get player with most votes in current round
-    fun getMostVotedPlayer(): Pair<Int, Int>? {
-        val voteCounts = getVoteStatistics()
-        return voteCounts.maxByOrNull { it.value }?.toPair()
-    }
-    
-    // Get vote history for all rounds
-    fun getVoteHistory(): Map<Int, Map<Int, Int>> {
-        val allVotes = _voteRecords.value ?: emptyList()
-        val roundVotes = mutableMapOf<Int, MutableMap<Int, Int>>()
-        
-        allVotes.forEach {
-            if (!roundVotes.containsKey(it.round)) {
-                roundVotes[it.round] = mutableMapOf()
-            }
-            roundVotes[it.round]?.let {roundMap ->
-                roundMap[it.targetId] = roundMap.getOrDefault(it.targetId, 0) + 1
+        voteRecords.forEach { voteCounts[it.targetId] = voteCounts.getOrDefault(it.targetId, 0) + 1 }
+        _voteStats.value = if (voteCounts.isEmpty()) {
+            ""
+        } else {
+            voteCounts.entries.sortedByDescending { it.value }.joinToString("  ") {
+                "${it.key}号: ${it.value}票"
             }
         }
-        
-        return roundVotes
     }
 
-    fun setSpeaker(playerId: Int, duration: Int = 180) {
-        _speakerText.value = "【${playerId}号】发言中..."
-        
-        // Cancel any existing timer
-        speakerTimerTask?.cancel()
-        
-        // Start new timer
-        var timeLeft = duration
-        _speakerTimer.value = "${timeLeft} 秒"
-        
-        speakerTimerTask = coroutineScope.launch {
-            while (timeLeft > 0) {
-                kotlinx.coroutines.delay(1000)
-                timeLeft--
-                _speakerTimer.value = "${timeLeft} 秒"
-            }
-            _speakerText.value = ""
-            _speakerTimer.value = ""
-        }
-    }
-    
-    fun stopSpeakerTimer() {
-        speakerTimerTask?.cancel()
-        _speakerText.value = ""
-        _speakerTimer.value = ""
-    }
-
-    fun addGameEvent(event: GameEvent) {
-        val currentEvents = _gameEvents.value ?: mutableListOf()
-        currentEvents.add(0, event) // Add to top
-        _gameEvents.value = currentEvents
-    }
-
-    // Helper methods for UI
+    // Helper methods
     fun getPlayerById(playerId: Int): Player? {
         return _players.value?.find { it.id == playerId }
     }
 
-    fun getSpeechRecordsForPlayer(playerId: Int): List<SpeechRecord> {
-        return _speechRecords.value?.filter { it.playerId == playerId }?.sortedBy { it.round } ?: emptyList()
+    fun getSpeechRecordsForRound(round: Int): List<SpeechRecord> {
+        return _speechRecords.value?.filter { it.round == round }?.sortedBy { it.playerId } ?: emptyList()
     }
 
-    fun getVoteRecordsForPlayer(playerId: Int): List<VoteRecord> {
-        return _voteRecords.value?.filter { it.voterId == playerId }?.sortedBy { it.round } ?: emptyList()
+    fun getVoteRecordsForRound(round: Int): List<VoteRecord> {
+        return _voteRecords.value?.filter { it.round == round }?.sortedBy { it.voterId } ?: emptyList()
     }
 
-    fun getAlivePlayers(): List<Player> {
-        return _players.value?.filter { it.isAlive } ?: emptyList()
+    fun getSpeechRecordForPlayer(playerId: Int, round: Int): SpeechRecord? {
+        return _speechRecords.value?.find { it.playerId == playerId && it.round == round }
+    }
+
+    fun getVoteRecordForPlayer(playerId: Int, round: Int): VoteRecord? {
+        return _voteRecords.value?.find { it.voterId == playerId && it.round == round }
+    }
+
+    fun getAllRounds(): List<Int> {
+        val speechRounds = _speechRecords.value?.map { it.round } ?: emptyList()
+        val voteRounds = _voteRecords.value?.map { it.round } ?: emptyList()
+        return (speechRounds + voteRounds).distinct().sorted()
+    }
+
+    // Player status
+    fun setPlayerAlive(playerId: Int, isAlive: Boolean) {
+        val playerList = _players.value?.toMutableList() ?: return
+        val index = playerList.indexOfFirst { it.id == playerId }
+        if (index >= 0) {
+            playerList[index] = playerList[index].copy(isAlive = isAlive)
+            _players.value = playerList
+        }
     }
 }

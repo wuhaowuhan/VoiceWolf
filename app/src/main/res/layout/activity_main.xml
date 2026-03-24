@@ -13,84 +13,37 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="@color/info_panel"
-        android:padding="8dp"
+        android:padding="12dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- Game Mode Selection -->
-        <Spinner
-            android:id="@+id/gameModeSpinner"
+        <TextView
+            android:id="@+id/roundText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:entries="@array/game_modes"
-            android:spinnerMode="dropdown"
+            android:text="轮次: 1"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Day/Round Indicator -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/dayIndicator"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            app:cardBackgroundColor="@color/purple_700"
-            app:cardCornerRadius="40dp"
-            app:cardElevation="4dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/dayText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="第"
-                    android:textColor="@color/white"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:id="@+id/roundNumber"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="1"
-                    android:textColor="@color/white"
-                    android:textSize="24sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/roundType"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="天"
-                    android:textColor="@color/white"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- Settings Button -->
         <ImageButton
-            android:id="@+id/btnSettings"
+            android:id="@+id/btnMenu"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:layout_marginEnd="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Settings"
-            android:src="@android:drawable/ic_menu_preferences"
+            android:contentDescription="菜单"
+            android:src="@android:drawable/ic_menu_more"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:tint="@color/white" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Main Content Area -->
+    <!-- Main Content -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/mainContent"
         android:layout_width="0dp"
@@ -103,60 +56,114 @@
         <!-- Left Column Players (1-6) -->
         <LinearLayout
             android:id="@+id/leftColumn"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="0dp"
             android:gravity="center_vertical"
             android:orientation="vertical"
+            android:padding="8dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/centerPanel"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintWidth_percent="0.25">
+            app:layout_constraintTop_toTopOf="parent">
 
             <include
                 android:id="@+id/player1"
                 layout="@layout/item_player"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="4dp" />
 
             <include
                 android:id="@+id/player2"
                 layout="@layout/item_player"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="4dp" />
 
             <include
                 android:id="@+id/player3"
                 layout="@layout/item_player"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="4dp" />
 
             <include
                 android:id="@+id/player4"
                 layout="@layout/item_player"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="4dp" />
 
             <include
                 android:id="@+id/player5"
                 layout="@layout/item_player"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="4dp" />
 
             <include
                 android:id="@+id/player6"
                 layout="@layout/item_player"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="4dp" />
         </LinearLayout>
 
-        <!-- Center Information Panel -->
+        <!-- Right Column Players (7-12) -->
+        <LinearLayout
+            android:id="@+id/rightColumn"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:gravity="center_vertical"
+            android:orientation="vertical"
+            android:padding="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <include
+                android:id="@+id/player7"
+                layout="@layout/item_player"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="4dp" />
+
+            <include
+                android:id="@+id/player8"
+                layout="@layout/item_player"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="4dp" />
+
+            <include
+                android:id="@+id/player9"
+                layout="@layout/item_player"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="4dp" />
+
+            <include
+                android:id="@+id/player10"
+                layout="@layout/item_player"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="4dp" />
+
+            <include
+                android:id="@+id/player11"
+                layout="@layout/item_player"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="4dp" />
+
+            <include
+                android:id="@+id/player12"
+                layout="@layout/item_player"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="4dp" />
+        </LinearLayout>
+
+        <!-- Center Panel - Speech and Vote Records -->
         <androidx.cardview.widget.CardView
             android:id="@+id/centerPanel"
             android:layout_width="0dp"
@@ -168,183 +175,73 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/rightColumn"
             app:layout_constraintStart_toEndOf="@id/leftColumn"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintWidth_percent="0.5">
+            app:layout_constraintTop_toTopOf="parent">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:padding="8dp">
 
-                <!-- Tab Selector -->
-                <com.google.android.material.tabs.TabLayout
-                    android:id="@+id/tabLayout"
-                    android:layout_width="match_parent"
+                <!-- Speech Section -->
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@color/purple_700"
-                    app:tabIndicatorColor="@color/white"
-                    app:tabSelectedTextColor="@color/white"
-                    app:tabTextColor="@color/white" />
+                    android:text="📝 本轮发言"
+                    android:textColor="@color/white"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
 
-                <!-- Info Content -->
                 <ScrollView
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:fillViewport="true">
+                    android:layout_marginTop="4dp"
+                    android:layout_weight="1">
 
-                    <LinearLayout
+                    <TextView
+                        android:id="@+id/speechInfo"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-
-                        <TextView
-                            android:id="@+id/nightInfo"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/info_background_night"
-                            android:padding="8dp"
-                            android:text="第 1 夜"
-                            android:textAlignment="center"
-                            android:textColor="@color/white"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <androidx.recyclerview.widget.RecyclerView
-                            android:id="@+id/infoRecyclerView"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp" />
-
-                        <TextView
-                            android:id="@+id/dayInfo"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:background="@drawable/info_background_day"
-                            android:padding="8dp"
-                            android:text="第 1 天"
-                            android:textAlignment="center"
-                            android:textColor="@color/white"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/deathInfo"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:padding="8dp"
-                            android:textColor="@color/player_dead"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:id="@+id/voteInfo"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:padding="8dp"
-                            android:textColor="@color/player_selected"
-                            android:textSize="14sp" />
-                    </LinearLayout>
+                        android:text="暂无发言记录"
+                        android:textColor="@color/gray_light"
+                        android:textSize="13sp" />
                 </ScrollView>
 
-                <!-- Current Speaker -->
-                <LinearLayout
-                    android:id="@+id/speakerPanel"
+                <!-- Vote Section -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="🗳️ 本轮投票"
+                    android:textColor="@color/white"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <ScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_weight="1">
+
+                    <TextView
+                        android:id="@+id/voteInfo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="暂无投票记录"
+                        android:textColor="@color/gray_light"
+                        android:textSize="13sp" />
+                </ScrollView>
+
+                <!-- Vote Statistics -->
+                <TextView
+                    android:id="@+id/voteStats"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@color/purple_500"
-                    android:gravity="center"
-                    android:orientation="horizontal"
-                    android:padding="8dp">
-
-                    <TextView
-                        android:id="@+id/speakerText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="【8 号】发言中..."
-                        android:textColor="@color/white"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/speakerTimer"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="176 秒"
-                        android:textColor="@color/teal_200"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <ImageButton
-                        android:id="@+id/btnLike"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:layout_marginStart="16dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Like"
-                        android:src="@android:drawable/btn_star_big_off"
-                        app:tint="@color/white" />
-                </LinearLayout>
+                    android:layout_marginTop="4dp"
+                    android:textColor="@color/teal_200"
+                    android:textSize="12sp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
-
-        <!-- Right Column Players (7-12) -->
-        <LinearLayout
-            android:id="@+id/rightColumn"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:gravity="center_vertical"
-            android:orientation="vertical"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/centerPanel"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintWidth_percent="0.25">
-
-            <include
-                android:id="@+id/player7"
-                layout="@layout/item_player"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <include
-                android:id="@+id/player8"
-                layout="@layout/item_player"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <include
-                android:id="@+id/player9"
-                layout="@layout/item_player"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <include
-                android:id="@+id/player10"
-                layout="@layout/item_player"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <include
-                android:id="@+id/player11"
-                layout="@layout/item_player"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <include
-                android:id="@+id/player12"
-                layout="@layout/item_player"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-        </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Bottom Control Panel -->
@@ -353,6 +250,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="@color/info_panel"
+        android:gravity="center"
         android:orientation="horizontal"
         android:padding="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -360,33 +258,28 @@
         app:layout_constraintStart_toStartOf="parent">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnStartGame"
-            android:layout_width="0dp"
+            android:id="@+id/btnAddSpeech"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="4dp"
-            android:layout_weight="1"
-            android:text="@string/start_game"
-            android:textSize="12sp" />
+            android:layout_marginEnd="8dp"
+            android:text="+ 记录发言"
+            android:textSize="13sp" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnResetGame"
-            android:layout_width="0dp"
+            android:id="@+id/btnAddVote"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"
-            android:layout_weight="1"
-            android:text="@string/reset_game"
-            android:textSize="12sp"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+            android:layout_marginEnd="8dp"
+            android:text="+ 记录投票"
+            android:textSize="13sp" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnPlayerAction"
-            android:layout_width="0dp"
+            android:id="@+id/btnHistory"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_weight="1"
-            android:text="玩家操作"
-            android:textSize="12sp" />
+            android:text="历史"
+            android:textSize="13sp" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
