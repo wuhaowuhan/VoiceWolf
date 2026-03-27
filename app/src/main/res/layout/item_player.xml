@@ -29,36 +29,17 @@
             android:textSize="20sp"
             android:textStyle="bold" />
 
-        <!-- Status indicator (dead/alive) -->
-        <View
-            android:id="@+id/statusIndicator"
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="4dp"
-            android:background="@drawable/status_indicator_alive" />
-
-        <!-- Role badge indicator -->
-        <View
-            android:id="@+id/roleBadge"
-            android:layout_width="12dp"
-            android:layout_height="12dp"
-            android:layout_gravity="bottom|start"
-            android:layout_margin="4dp"
-            android:background="@drawable/status_indicator_alive"
-            android:visibility="gone" />
-        
-        <!-- Role text -->
+        <!-- Role text badge (bottom) -->
         <TextView
             android:id="@+id/roleText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            android:background="@android:color/transparent"
+            android:background="#80000000"
             android:gravity="center"
             android:textColor="@color/white"
-            android:textSize="8sp"
+            android:textSize="9sp"
             android:textStyle="bold"
-            android:visibility="visible" />
+            android:visibility="gone" />
     </FrameLayout>
 </androidx.cardview.widget.CardView>

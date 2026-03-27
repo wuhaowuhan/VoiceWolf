@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.widget.CheckBox
 import android.widget.TextView
 import android.widget.Toast
+import com.voicewolf.app.R
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
@@ -126,23 +127,103 @@ class MainActivity : AppCompatActivity() {
         val playerView = playerViews[playerId] ?: return
         val player = viewModel.getPlayerById(playerId) ?: return
 
-        val statusIndicator = playerView.findViewById<android.view.View>(R.id.statusIndicator)
-        statusIndicator?.setBackgroundResource(
-            if (player.isAlive) R.drawable.status_indicator_alive
-            else R.drawable.status_indicator_dead
-        )
+        val roleText = playerView.findViewById<TextView>(R.id.roleText)
+
+        if (player.markedRole != Player.MarkedRole.NONE) {
+            roleText?.visibility = android.view.View.VISIBLE
+            roleText?.text = player.getMarkedRoleDisplayName()
+
+            // Set role text background color based on role
+            val bgColorRes = when (player.markedRole) {
+                Player.MarkedRole.SEER -> R.color.role_seer
+                Player.MarkedRole.WITCH -> R.color.role_witch
+                Player.MarkedRole.HUNTER -> R.color.role_hunter
+                Player.MarkedRole.GUARD -> R.color.role_guard
+                Player.MarkedRole.GOOD -> R.color.role_good
+                Player.MarkedRole.VILLAGER -> R.color.role_villager
+                Player.MarkedRole.WEREWOLF -> R.color.role_werewolf
+                Player.MarkedRole.MECHANICAL_WOLF -> R.color.role_mech_wolf
+                Player.MarkedRole.NONE -> R.color.gray_light
+            }
+            roleText?.setBackgroundColor(resources.getColor(bgColorRes, null))
+        } else {
+            roleText?.visibility = android.view.View.GONE
+        }
     }
 
     private fun showPlayerOptionsDialog(playerId: Int) {
-        val options = arrayOf("记录发言", "查看投票")
+        val player = viewModel.getPlayerById(playerId)
+        val hasMarkedRole = player?.markedRole != Player.MarkedRole.NONE
+
+        val options = if (hasMarkedRole) {
+            arrayOf("记录发言", "查看投票", "标记身份", "清除身份标记")
+        } else {
+            arrayOf("记录发言", "查看投票", "标记身份")
+        }
 
         AlertDialog.Builder(this)
             .setTitle("${playerId}号玩家")
             .setItems(options) { _, which ->
-                when (which) {
-                    0 -> showAddSpeechDialog(playerId)
-                    1 -> showAddVoteDialog()
+                when {
+                    which == 0 -> showAddSpeechDialog(playerId)
+                    which == 1 -> showAddVoteDialog()
+                    which == 2 -> showMarkRoleDialog(playerId)
+                    hasMarkedRole && which == 3 -> {
+                        viewModel.setPlayerMarkedRole(playerId, Player.MarkedRole.NONE)
+                        updatePlayerView(playerId)
+                        Toast.makeText(this, "已清除身份标记", Toast.LENGTH_SHORT).show()
+                    }
                 }
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun showMarkRoleDialog(playerId: Int) {
+        val roleOptions = arrayOf(
+            "预言家",
+            "好人",
+            "狼人",
+            "平民",
+            "女巫",
+            "猎人",
+            "守卫",
+            "机械狼"
+        )
+
+        val currentPlayer = viewModel.getPlayerById(playerId)
+        val currentMarkedRole = currentPlayer?.markedRole ?: Player.MarkedRole.NONE
+
+        // Find current selection index (-1 means no selection)
+        val selectedIndex = when (currentMarkedRole) {
+            Player.MarkedRole.NONE -> -1
+            Player.MarkedRole.SEER -> 0
+            Player.MarkedRole.GOOD -> 1
+            Player.MarkedRole.WEREWOLF -> 2
+            Player.MarkedRole.VILLAGER -> 3
+            Player.MarkedRole.WITCH -> 4
+            Player.MarkedRole.HUNTER -> 5
+            Player.MarkedRole.GUARD -> 6
+            Player.MarkedRole.MECHANICAL_WOLF -> 7
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("标记身份 - ${playerId}号")
+            .setSingleChoiceItems(roleOptions, selectedIndex) { dialog, which ->
+                val markedRole = when (which) {
+                    0 -> Player.MarkedRole.SEER
+                    1 -> Player.MarkedRole.GOOD
+                    2 -> Player.MarkedRole.WEREWOLF
+                    3 -> Player.MarkedRole.VILLAGER
+                    4 -> Player.MarkedRole.WITCH
+                    5 -> Player.MarkedRole.HUNTER
+                    6 -> Player.MarkedRole.GUARD
+                    7 -> Player.MarkedRole.MECHANICAL_WOLF
+                    else -> Player.MarkedRole.NONE
+                }
+                viewModel.setPlayerMarkedRole(playerId, markedRole)
+                updatePlayerView(playerId)
+                dialog.dismiss()
             }
             .setNegativeButton("取消", null)
             .show()

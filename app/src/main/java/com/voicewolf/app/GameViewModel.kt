@@ -69,7 +69,8 @@ class GameViewModel : ViewModel() {
         val resetPlayers = _players.value?.map { player ->
             player.copy(
                 isAlive = true,
-                role = Player.Role.UNKNOWN
+                role = Player.Role.UNKNOWN,
+                markedRole = Player.MarkedRole.NONE
             )
         } ?: emptyList()
         _players.value = resetPlayers
@@ -226,6 +227,16 @@ class GameViewModel : ViewModel() {
         val index = playerList.indexOfFirst { it.id == playerId }
         if (index >= 0) {
             playerList[index] = playerList[index].copy(isAlive = isAlive)
+            _players.value = playerList
+        }
+    }
+
+    // Player marked role
+    fun setPlayerMarkedRole(playerId: Int, markedRole: Player.MarkedRole) {
+        val playerList = _players.value?.toMutableList() ?: return
+        val index = playerList.indexOfFirst { it.id == playerId }
+        if (index >= 0) {
+            playerList[index] = playerList[index].copy(markedRole = markedRole)
             _players.value = playerList
         }
     }

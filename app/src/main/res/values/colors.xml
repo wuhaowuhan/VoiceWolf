@@ -18,4 +18,14 @@
     <color name="info_panel_day">#FF1E3A8A</color>
     <color name="info_panel_night">#FF4C1D95</color>
     <color name="gray_light">#FFB0B0B0</color>
+
+    <!-- Role badge background colors -->
+    <color name="role_seer">#FF3B82F6</color>      <!-- 预言家 - 蓝色 -->
+    <color name="role_witch">#FF8B5CF6</color>     <!-- 女巫 - 紫色 -->
+    <color name="role_hunter">#FF8B4513</color>    <!-- 猎人 - 褐色 -->
+    <color name="role_guard">#FFFFD700</color>    <!-- 守卫 - 黄色 -->
+    <color name="role_good">#FF22C55E</color>     <!-- 好人 - 绿色 -->
+    <color name="role_villager">#FF22C55E</color> <!-- 平民 - 绿色 -->
+    <color name="role_werewolf">#FFDC2626</color> <!-- 狼人 - 红色 -->
+    <color name="role_mech_wolf">#FFB91C1C</color> <!-- 机械狼 - 深红 -->
 </resources>

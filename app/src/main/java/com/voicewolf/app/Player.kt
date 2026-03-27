@@ -7,8 +7,24 @@ data class Player(
     val id: Int,
     val name: String = "Player $id",
     val isAlive: Boolean = true,
-    val role: Role = Role.UNKNOWN
+    val role: Role = Role.UNKNOWN,
+    val markedRole: MarkedRole = MarkedRole.NONE
 ) {
+    /**
+     * Marked role for recording player analysis
+     */
+    enum class MarkedRole {
+        NONE,
+        SEER,        // 预言家
+        GOOD,        // 好人
+        WEREWOLF,    // 狼人
+        VILLAGER,    // 平民
+        WITCH,       // 女巫
+        HUNTER,      // 猎人
+        GUARD,       // 守卫
+        MECHANICAL_WOLF  // 机械狼
+    }
+
     enum class Role {
         UNKNOWN,
         // Good roles
@@ -39,6 +55,24 @@ data class Player(
             Role.WEREWOLF_BEAUTY -> "狼美人"
             Role.MECHANICAL_WOLF -> "机械狼"
         }
+    }
+
+    fun getMarkedRoleDisplayName(): String {
+        return when (markedRole) {
+            MarkedRole.NONE -> ""
+            MarkedRole.SEER -> "预言"
+            MarkedRole.GOOD -> "好人"
+            MarkedRole.WEREWOLF -> "狼人"
+            MarkedRole.VILLAGER -> "平民"
+            MarkedRole.WITCH -> "女巫"
+            MarkedRole.HUNTER -> "猎人"
+            MarkedRole.GUARD -> "守卫"
+            MarkedRole.MECHANICAL_WOLF -> "机械狼"
+        }
+    }
+
+    fun isMarkedEvil(): Boolean {
+        return markedRole in listOf(MarkedRole.WEREWOLF, MarkedRole.MECHANICAL_WOLF)
     }
 
     fun isEvil(): Boolean {
