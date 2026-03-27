@@ -1,14 +1,14 @@
 ---
-name: VoiceWolf 架构重构与交互优化
+name: 狼影 (WolfShadow) 架构重构与交互优化
 description: 狼人杀面杀辅助器 - Jetpack Compose 架构重构与交互体验优化
 type: project
 ---
 
-# VoiceWolf 架构重构与交互优化设计
+# 狼影 (WolfShadow) 架构重构与交互优化设计
 
 ## 项目背景
 
-VoiceWolf 是一款狼人杀面杀辅助器，主要功能是记录玩家发言、投票情况和对玩家身份的标记。现有版本存在以下问题：
+狼影 (WolfShadow) 是一款狼人杀面杀辅助器，主要功能是记录玩家发言、投票情况和对玩家身份的标记。现有版本存在以下问题：
 
 - **交互繁琐**：添加发言/投票需要多次点击，流程不够流畅
 - **信息查看不便**：难以快速回顾玩家发言模式或投票倾向
@@ -271,8 +271,8 @@ class GameViewModel : ViewModel() {
 ## 八、Compose 文件结构
 
 ```
-app/src/main/java/com/voicewolf/app/
-├── VoiceWolfApp.kt              // Application 类
+app/src/main/java/com/wolfshadow/app/
+├── WolfShadowApp.kt             // Application 类
 ├── MainActivity.kt              // 入口 Activity（精简）
 ├── GameViewModel.kt             // ViewModel
 ├── model/

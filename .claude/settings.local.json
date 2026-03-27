@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p app/src/main/java/com/wolfshadow/app)",
+      "Bash(mv app/src/main/java/com/voicewolf/app/*.kt app/src/main/java/com/wolfshadow/app/)",
+      "Bash(rm -rf app/src/main/java/com/voicewolf)"
+    ]
+  }
+}

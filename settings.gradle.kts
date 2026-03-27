@@ -29,5 +29,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "VoiceWolf"
+rootProject.name = "WolfShadow"
 include(":app")
