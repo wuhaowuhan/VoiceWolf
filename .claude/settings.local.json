@@ -3,7 +3,17 @@
     "allow": [
       "Bash(mkdir -p app/src/main/java/com/wolfshadow/app)",
       "Bash(mv app/src/main/java/com/voicewolf/app/*.kt app/src/main/java/com/wolfshadow/app/)",
-      "Bash(rm -rf app/src/main/java/com/voicewolf)"
+      "Bash(rm -rf app/src/main/java/com/voicewolf)",
+      "Bash(gradlew.bat clean:*)",
+      "Bash(gradle wrapper:*)",
+      "Bash(where java:*)",
+      "Bash(java -version)",
+      "Bash(set \"JAVA_HOME=C:\\\\Program Files\\\\Amazon Corretto\\\\jdk17.0.12_7\")",
+      "Bash(gradlew.bat assembleDebug)",
+      "Bash(cmd.exe /c \"set JAVA_HOME=C:\\\\Program Files\\\\Amazon Corretto\\\\jdk17.0.12_7 && gradlew.bat assembleDebug\")",
+      "Bash(export JAVA_HOME=\"/c/Program Files/Amazon Corretto/jdk17.0.12_7\")",
+      "Bash(java -cp \"gradle/wrapper/gradle-wrapper.jar\" org.gradle.wrapper.GradleWrapperMain assembleDebug)",
+      "Bash(java -cp \"gradle/wrapper/gradle-wrapper.jar\" org.gradle.wrapper.GradleWrapperMain --stop)"
     ]
   }
 }
