@@ -282,7 +282,7 @@ class MainActivity : AppCompatActivity() {
         for (i in 1..12) {
             val checkBox = CheckBox(this).apply {
                 text = "${i}号"
-                setTextColor(resources.getColor(R.color.white, null))
+                setTextColor(resources.getColor(android.R.color.primary_text_light, null))
                 layoutParams = androidx.gridlayout.widget.GridLayout.LayoutParams().apply {
                     width = 0
                     height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
