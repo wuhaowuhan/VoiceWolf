@@ -7,7 +7,7 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    
+
     <!-- Game colors -->
     <color name="player_alive">#FF4CAF50</color>
     <color name="player_dead">#FF757575</color>
@@ -18,6 +18,14 @@
     <color name="info_panel_day">#FF1E3A8A</color>
     <color name="info_panel_night">#FF4C1D95</color>
     <color name="gray_light">#FFB0B0B0</color>
+
+    <!-- Border colors for role factions -->
+    <color name="border_good">#FF22C55E</color>      <!-- 好人阵营边框 - 绿色 -->
+    <color name="border_werewolf">#FFDC2626</color> <!-- 狼人阵营边框 - 红色 -->
+    <color name="border_default">#FF424242</color>  <!-- 默认边框 - 灰色 -->
+
+    <!-- Dead overlay color -->
+    <color name="dead_overlay">#80000000</color>    <!-- 出局遮罩 - 半透明黑色 -->
 
     <!-- Role badge background colors -->
     <color name="role_seer">#FF3B82F6</color>      <!-- 预言家 - 蓝色 -->

@@ -1,29 +1,43 @@
 package com.voicewolf.app
 
+import android.graphics.Color
 import android.os.Bundle
+import android.view.Gravity
+import android.view.View
 import android.widget.CheckBox
+import android.widget.FrameLayout
+import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import com.voicewolf.app.R
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import com.voicewolf.app.databinding.ActivityMainBinding
 import com.voicewolf.app.databinding.DialogAddSpeechBinding
 import com.voicewolf.app.databinding.DialogAddVoteBinding
 import com.voicewolf.app.databinding.DialogHistoryBinding
+import com.voicewolf.app.databinding.DialogSelectCheckBinding
+import com.voicewolf.app.databinding.DialogSelectNumberBinding
+import com.voicewolf.app.databinding.DialogSelectNumbersMultiBinding
+import com.voicewolf.app.databinding.ItemPlayerBinding
 
 /**
  * Main activity for Werewolf face-to-face assistant app
- * Simplified for player perspective - focuses on speech and vote recording
+ * Supports dynamic player count (8-15 players)
  */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var viewModel: GameViewModel
 
-    // Player views map
-    private val playerViews = mutableMapOf<Int, android.view.View>()
+    // Left column player views (1-6, fixed)
+    private val leftPlayerBindings = mutableMapOf<Int, ItemPlayerBinding>()
+
+    // Right column player views (7-N, dynamic)
+    private val rightPlayerViews = mutableMapOf<Int, View>()
 
     // Voter checkboxes for vote dialog
     private val voterCheckboxes = mutableMapOf<Int, CheckBox>()
@@ -36,49 +50,54 @@ class MainActivity : AppCompatActivity() {
         // Initialize ViewModel
         viewModel = ViewModelProvider(this)[GameViewModel::class.java]
 
-        setupPlayerViews()
+        setupLeftColumnPlayers()
         setupButtons()
         observeViewModel()
     }
 
-    private fun setupPlayerViews() {
-        // Map player IDs to their views
-        // Left column: 1-6
-        playerViews[1] = binding.player1.root
-        playerViews[2] = binding.player2.root
-        playerViews[3] = binding.player3.root
-        playerViews[4] = binding.player4.root
-        playerViews[5] = binding.player5.root
-        playerViews[6] = binding.player6.root
+    private fun setupLeftColumnPlayers() {
+        // Setup fixed left column players (1-6)
+        leftPlayerBindings[1] = binding.player1
+        leftPlayerBindings[2] = binding.player2
+        leftPlayerBindings[3] = binding.player3
+        leftPlayerBindings[4] = binding.player4
+        leftPlayerBindings[5] = binding.player5
+        leftPlayerBindings[6] = binding.player6
 
-        // Right column: 7-12
-        playerViews[7] = binding.player7.root
-        playerViews[8] = binding.player8.root
-        playerViews[9] = binding.player9.root
-        playerViews[10] = binding.player10.root
-        playerViews[11] = binding.player11.root
-        playerViews[12] = binding.player12.root
+        for ((playerId, playerBinding) in leftPlayerBindings) {
+            setupPlayerView(playerBinding.root, playerId)
+        }
+    }
 
-        // Set player numbers and click listeners
-        for ((playerId, playerView) in playerViews) {
-            // Set player number
-            val numberText = playerView.findViewById<TextView>(R.id.playerNumber)
-            numberText?.text = playerId.toString()
+    private fun setupPlayerView(playerView: View, playerId: Int) {
+        val binding = ItemPlayerBinding.bind(playerView)
 
-            // Click listener
-            playerView.setOnClickListener {
-                showPlayerOptionsDialog(playerId)
+        // Set player number
+        binding.playerNumber.text = playerId.toString()
+
+        // Setup pencil button for quick role marking
+        binding.btnMarkRole.setOnClickListener {
+            showMarkRoleDialog(playerId)
+        }
+
+        // Setup remove button (only visible for players 13-15 when game not started)
+        binding.btnRemove.setOnClickListener {
+            showRemovePlayerConfirmDialog(playerId)
+        }
+
+        // Click listener for options menu
+        playerView.setOnClickListener {
+            showPlayerOptionsDialog(playerId)
+        }
+
+        // Long click to toggle alive/dead status
+        playerView.setOnLongClickListener {
+            val player = viewModel.getPlayerById(playerId)
+            if (player != null && player.isActive) {
+                viewModel.setPlayerAlive(playerId, !player.isAlive)
+                updatePlayerView(playerId)
             }
-
-            // Long click to toggle alive/dead status
-            playerView.setOnLongClickListener {
-                val player = viewModel.getPlayerById(playerId)
-                if (player != null) {
-                    viewModel.setPlayerAlive(playerId, !player.isAlive)
-                    updatePlayerView(playerId)
-                }
-                true
-            }
+            true
         }
     }
 
@@ -102,6 +121,14 @@ class MainActivity : AppCompatActivity() {
         binding.btnMenu.setOnClickListener {
             showMenuDialog()
         }
+
+        binding.btnAddPlayer.setOnClickListener {
+            if (viewModel.addPlayer()) {
+                Toast.makeText(this, "已添加玩家", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "无法添加玩家（已达上限或游戏已开始）", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun observeViewModel() {
@@ -115,25 +142,106 @@ class MainActivity : AppCompatActivity() {
             binding.allRecordsText.text = text
         }
 
-        // Observe players
+        // Observe active player IDs - rebuild right column dynamically
+        viewModel.activePlayerIds.observe(this) { activeIds ->
+            rebuildRightColumn(activeIds)
+            updateAddButtonVisibility()
+            updateAllPlayerViews()
+        }
+
+        // Observe players for individual updates
         viewModel.players.observe(this) { players ->
             players.forEach { player ->
-                updatePlayerView(player.id)
+                if (player.isActive) {
+                    updatePlayerView(player.id)
+                }
             }
         }
     }
 
+    private fun rebuildRightColumn(activeIds: Set<Int>) {
+        val container = binding.rightColumnContainer
+
+        // Remove all dynamic player views (keep the add button)
+        rightPlayerViews.values.forEach { container.removeView(it) }
+        rightPlayerViews.clear()
+
+        // Add player views for IDs >= 7
+        activeIds.filter { it >= 7 }.sorted().forEach { playerId ->
+            val playerView = createPlayerView(playerId)
+            container.addView(playerView, container.childCount - 1) // Add before add button
+            rightPlayerViews[playerId] = playerView
+        }
+    }
+
+    private fun createPlayerView(playerId: Int): View {
+        val binding = ItemPlayerBinding.inflate(layoutInflater)
+
+        // Set player number
+        binding.playerNumber.text = playerId.toString()
+
+        // Setup pencil button for quick role marking
+        binding.btnMarkRole.setOnClickListener {
+            showMarkRoleDialog(playerId)
+        }
+
+        // Setup remove button (only visible for players 13-15 when game not started)
+        binding.btnRemove.setOnClickListener {
+            showRemovePlayerConfirmDialog(playerId)
+        }
+
+        // Click listener for options menu
+        binding.root.setOnClickListener {
+            showPlayerOptionsDialog(playerId)
+        }
+
+        // Long click to toggle alive/dead status
+        binding.root.setOnLongClickListener {
+            val player = viewModel.getPlayerById(playerId)
+            if (player != null && player.isActive) {
+                viewModel.setPlayerAlive(playerId, !player.isAlive)
+                updatePlayerView(playerId)
+            }
+            true
+        }
+
+        return binding.root
+    }
+
+    private fun updateAddButtonVisibility() {
+        val gameStarted = viewModel.hasGameStarted()
+        val playerCount = viewModel.getActivePlayerCount()
+        binding.btnAddPlayer.visibility = if (!gameStarted && playerCount < GameViewModel.MAX_PLAYERS) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+    }
+
+    private fun updateAllPlayerViews() {
+        // Update left column
+        leftPlayerBindings.keys.forEach { playerId ->
+            updatePlayerView(playerId)
+        }
+        // Update right column
+        rightPlayerViews.keys.forEach { playerId ->
+            updatePlayerView(playerId)
+        }
+    }
+
     private fun updatePlayerView(playerId: Int) {
-        val playerView = playerViews[playerId] ?: return
-        val player = viewModel.getPlayerById(playerId) ?: return
+        val player = viewModel.getPlayerById(playerId)
+        if (player == null || !player.isActive) return
 
-        val roleText = playerView.findViewById<TextView>(R.id.roleText)
+        // Find the view
+        val playerView = leftPlayerBindings[playerId]?.root ?: rightPlayerViews[playerId] ?: return
+        val binding = ItemPlayerBinding.bind(playerView)
 
+        // Update role text badge
         if (player.markedRole != Player.MarkedRole.NONE) {
-            roleText?.visibility = android.view.View.VISIBLE
-            roleText?.text = player.getMarkedRoleDisplayName()
+            binding.roleText.visibility = View.VISIBLE
+            binding.roleText.text = player.getMarkedRoleDisplayName()
 
-            // Set role text background color based on role
             val bgColorRes = when (player.markedRole) {
                 Player.MarkedRole.SEER -> R.color.role_seer
                 Player.MarkedRole.WITCH -> R.color.role_witch
@@ -145,15 +253,51 @@ class MainActivity : AppCompatActivity() {
                 Player.MarkedRole.MECHANICAL_WOLF -> R.color.role_mech_wolf
                 Player.MarkedRole.NONE -> R.color.gray_light
             }
-            roleText?.setBackgroundColor(resources.getColor(bgColorRes, null))
+            binding.roleText.setBackgroundColor(ContextCompat.getColor(this, bgColorRes))
         } else {
-            roleText?.visibility = android.view.View.GONE
+            binding.roleText.visibility = View.GONE
         }
+
+        // Update border color based on marked role faction
+        val cardView = playerView as CardView
+        val borderColor = when {
+            player.markedRole.isMarkedEvil() -> ContextCompat.getColor(this, R.color.border_werewolf)
+            player.markedRole != Player.MarkedRole.NONE -> ContextCompat.getColor(this, R.color.border_good)
+            else -> ContextCompat.getColor(this, R.color.border_default)
+        }
+        cardView.strokeColor = borderColor
+
+        // Update dead overlay
+        binding.deadOverlay.visibility = if (!player.isAlive) View.VISIBLE else View.GONE
+
+        // Update remove button visibility (only for 13-15, game not started)
+        binding.btnRemove.visibility = if (playerId >= 13 && !viewModel.hasGameStarted()) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+    }
+
+    private fun showRemovePlayerConfirmDialog(playerId: Int) {
+        AlertDialog.Builder(this)
+            .setTitle("移除玩家")
+            .setMessage("确定要移除${playerId}号玩家吗？")
+            .setPositiveButton("确认") { _, _ ->
+                if (viewModel.removePlayer(playerId)) {
+                    Toast.makeText(this, "已移除${playerId}号玩家", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "无法移除该玩家", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
 
     private fun showPlayerOptionsDialog(playerId: Int) {
         val player = viewModel.getPlayerById(playerId)
-        val hasMarkedRole = player?.markedRole != Player.MarkedRole.NONE
+        if (player == null || !player.isActive) return
+
+        val hasMarkedRole = player.markedRole != Player.MarkedRole.NONE
 
         val options = if (hasMarkedRole) {
             arrayOf("记录发言", "查看投票", "标记身份", "清除身份标记")
@@ -180,50 +324,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showMarkRoleDialog(playerId: Int) {
-        val roleOptions = arrayOf(
-            "预言家",
-            "好人",
-            "狼人",
-            "平民",
-            "女巫",
-            "猎人",
-            "守卫",
-            "机械狼"
-        )
+        val roleOptionsGood = arrayOf("预言家", "女巫", "猎人", "守卫", "好人", "平民")
+        val roleOptionsEvil = arrayOf("狼人", "机械狼")
 
         val currentPlayer = viewModel.getPlayerById(playerId)
         val currentMarkedRole = currentPlayer?.markedRole ?: Player.MarkedRole.NONE
 
-        // Find current selection index (-1 means no selection)
-        val selectedIndex = when (currentMarkedRole) {
-            Player.MarkedRole.NONE -> -1
-            Player.MarkedRole.SEER -> 0
-            Player.MarkedRole.GOOD -> 1
-            Player.MarkedRole.WEREWOLF -> 2
-            Player.MarkedRole.VILLAGER -> 3
-            Player.MarkedRole.WITCH -> 4
-            Player.MarkedRole.HUNTER -> 5
-            Player.MarkedRole.GUARD -> 6
-            Player.MarkedRole.MECHANICAL_WOLF -> 7
-        }
-
         AlertDialog.Builder(this)
             .setTitle("标记身份 - ${playerId}号")
-            .setSingleChoiceItems(roleOptions, selectedIndex) { dialog, which ->
+            .setItems(roleOptionsGood + roleOptionsEvil) { _, which ->
                 val markedRole = when (which) {
                     0 -> Player.MarkedRole.SEER
-                    1 -> Player.MarkedRole.GOOD
-                    2 -> Player.MarkedRole.WEREWOLF
-                    3 -> Player.MarkedRole.VILLAGER
-                    4 -> Player.MarkedRole.WITCH
-                    5 -> Player.MarkedRole.HUNTER
-                    6 -> Player.MarkedRole.GUARD
+                    1 -> Player.MarkedRole.WITCH
+                    2 -> Player.MarkedRole.HUNTER
+                    3 -> Player.MarkedRole.GUARD
+                    4 -> Player.MarkedRole.GOOD
+                    5 -> Player.MarkedRole.VILLAGER
+                    6 -> Player.MarkedRole.WEREWOLF
                     7 -> Player.MarkedRole.MECHANICAL_WOLF
                     else -> Player.MarkedRole.NONE
                 }
                 viewModel.setPlayerMarkedRole(playerId, markedRole)
                 updatePlayerView(playerId)
-                dialog.dismiss()
             }
             .setNegativeButton("取消", null)
             .show()
@@ -233,34 +355,246 @@ class MainActivity : AppCompatActivity() {
         val dialogBinding = DialogAddSpeechBinding.inflate(layoutInflater)
         val currentDay = viewModel.currentDay.value ?: 1
 
-        // Set player spinner
-        val playerNames = (1..12).map { "${it}号" }.toTypedArray()
+        // Get active players for dynamic spinner
+        val activePlayers = viewModel.getActivePlayers()
+        val playerNames = activePlayers.map { "${it.id}号" }.toTypedArray()
         val adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_spinner_item, playerNames)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         dialogBinding.spinnerPlayer.adapter = adapter
 
         // Set selected player if provided
         if (playerId != null) {
-            dialogBinding.spinnerPlayer.setSelection(playerId - 1)
+            val index = activePlayers.indexOfFirst { it.id == playerId }
+            if (index >= 0) {
+                dialogBinding.spinnerPlayer.setSelection(index)
+            }
         }
 
         // Load existing record if any
-        val existingRecord = playerId?.let { viewModel.getSpeechRecordForPlayer(it, currentDay) }
+        val selectedPlayerId = playerId ?: activePlayers.firstOrNull()?.id
+        val existingRecord = selectedPlayerId?.let { viewModel.getSpeechRecordForPlayer(it, currentDay) }
         if (existingRecord != null) {
             dialogBinding.editContent.setText(existingRecord.summary)
+        }
+
+        // Setup template button click listeners
+        // Direct insert templates
+        dialogBinding.btnTemplateSeer.setOnClickListener {
+            appendText(dialogBinding.editContent, "跳预言家 ")
+        }
+        dialogBinding.btnTemplateWitch.setOnClickListener {
+            appendText(dialogBinding.editContent, "跳女巫 ")
+        }
+        dialogBinding.btnTemplateGuard.setOnClickListener {
+            appendText(dialogBinding.editContent, "跳守卫 ")
+        }
+
+        // Single number selection templates
+        dialogBinding.btnTemplateSilver.setOnClickListener {
+            showSingleNumberSelectDialog("银水") { number ->
+                appendText(dialogBinding.editContent, "银水${number}号 ")
+            }
+        }
+        dialogBinding.btnTemplatePoison.setOnClickListener {
+            showSingleNumberSelectDialog("毒") { number ->
+                appendText(dialogBinding.editContent, "毒${number}号 ")
+            }
+        }
+        dialogBinding.btnTemplateShield.setOnClickListener {
+            showSingleNumberSelectDialog("盾") { number ->
+                appendText(dialogBinding.editContent, "盾${number}号 ")
+            }
+        }
+
+        // Check template (number + identity)
+        dialogBinding.btnTemplateCheck.setOnClickListener {
+            showCheckSelectDialog { number, isWerewolf ->
+                val result = if (isWerewolf) "狼" else "好人"
+                appendText(dialogBinding.editContent, "查验${number}号 $result ")
+            }
+        }
+
+        // Multi-select templates
+        dialogBinding.btnTemplateBadgeFlow.setOnClickListener {
+            showMultiNumberSelectDialog("警徽流") { numbers ->
+                appendText(dialogBinding.editContent, "警徽流 ${numbers.joinToString(" ") { "${it}号" }} ")
+            }
+        }
+        dialogBinding.btnTemplateProtect.setOnClickListener {
+            showMultiNumberSelectDialog("保") { numbers ->
+                appendText(dialogBinding.editContent, "保${numbers.joinToString("、") { "${it}号" }} ")
+            }
+        }
+        dialogBinding.btnTemplateAttack.setOnClickListener {
+            showMultiNumberSelectDialog("踩") { numbers ->
+                appendText(dialogBinding.editContent, "踩${numbers.joinToString("、") { "${it}号" }} ")
+            }
+        }
+        dialogBinding.btnTemplateWolfAt.setOnClickListener {
+            showMultiNumberSelectDialog("狼在") { numbers ->
+                appendText(dialogBinding.editContent, "觉得狼在${numbers.joinToString("、") { "${it}号" }} ")
+            }
         }
 
         AlertDialog.Builder(this)
             .setTitle("记录发言 - 第${currentDay}天")
             .setView(dialogBinding.root)
             .setPositiveButton("保存") { _, _ ->
-                val selectedPlayerId = dialogBinding.spinnerPlayer.selectedItemPosition + 1
+                val selectedIndex = dialogBinding.spinnerPlayer.selectedItemPosition
+                val selectedPlayer = activePlayers[selectedIndex]
                 val content = dialogBinding.editContent.text.toString()
 
                 if (content.isNotBlank()) {
-                    viewModel.addSpeechRecord(selectedPlayerId, currentDay, content)
+                    viewModel.addSpeechRecord(selectedPlayer.id, currentDay, content)
                     Toast.makeText(this, "发言已记录", Toast.LENGTH_SHORT).show()
                 }
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun appendText(editText: android.widget.EditText, text: String) {
+        val currentText = editText.text.toString()
+        editText.setText(currentText + text)
+        editText.setSelection(editText.text.length) // Move cursor to end
+    }
+
+    private fun showSingleNumberSelectDialog(title: String, onSelected: (Int) -> Unit) {
+        val dialogBinding = com.voicewolf.app.databinding.DialogSelectNumberBinding.inflate(layoutInflater)
+        dialogBinding.titleText.text = title
+
+        val activePlayers = viewModel.getActivePlayers()
+
+        // Populate number grid dynamically
+        dialogBinding.numberGrid.removeAllViews()
+        activePlayers.forEach { player ->
+            val btn = com.google.android.material.button.MaterialButton(this).apply {
+                text = "${player.id}"
+                textSize = 14f
+                layoutParams = androidx.gridlayout.widget.GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                    columnSpec = androidx.gridlayout.widget.GridLayout.spec(androidx.gridlayout.widget.GridLayout.UNDEFINED, 1f)
+                    setMargins(4, 4, 4, 4)
+                }
+            }
+            btn.setOnClickListener {
+                onSelected(player.id)
+                // Find and dismiss the dialog
+                (btn.parent.parent.parent as android.view.View).let { dialogView ->
+                    (dialogView.parent.parent as? AlertDialog)?.dismiss()
+                }
+            }
+            dialogBinding.numberGrid.addView(btn)
+        }
+
+        AlertDialog.Builder(this)
+            .setView(dialogBinding.root)
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun showCheckSelectDialog(onSelected: (Int, Boolean) -> Unit) {
+        val dialogBinding = com.voicewolf.app.databinding.DialogSelectCheckBinding.inflate(layoutInflater)
+
+        val activePlayers = viewModel.getActivePlayers()
+        var selectedNumber: Int? = null
+        var isWerewolf: Boolean? = null
+
+        // Populate number grid dynamically
+        dialogBinding.numberGrid.removeAllViews()
+        activePlayers.forEach { player ->
+            val btn = com.google.android.material.button.MaterialButton(this).apply {
+                text = "${player.id}"
+                textSize = 14f
+                layoutParams = androidx.gridlayout.widget.GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                    columnSpec = androidx.gridlayout.widget.GridLayout.spec(androidx.gridlayout.widget.GridLayout.UNDEFINED, 1f)
+                    setMargins(4, 4, 4, 4)
+                }
+            }
+            btn.setOnClickListener {
+                selectedNumber = player.id
+                // Update button appearance to show selection
+                btn.setBackgroundColor(ContextCompat.getColor(context, R.color.teal_700))
+            }
+            dialogBinding.numberGrid.addView(btn)
+        }
+
+        // Setup identity buttons
+        dialogBinding.btnGood.setOnClickListener {
+            isWerewolf = false
+            if (selectedNumber != null) {
+                onSelected(selectedNumber!!, false)
+                // Dismiss dialog
+                (dialogBinding.root.parent.parent as? AlertDialog)?.dismiss()
+            } else {
+                Toast.makeText(this, "请先选择玩家", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        dialogBinding.btnWerewolf.setOnClickListener {
+            isWerewolf = true
+            if (selectedNumber != null) {
+                onSelected(selectedNumber!!, true)
+                // Dismiss dialog
+                (dialogBinding.root.parent.parent as? AlertDialog)?.dismiss()
+            } else {
+                Toast.makeText(this, "请先选择玩家", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        AlertDialog.Builder(this)
+            .setView(dialogBinding.root)
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun showMultiNumberSelectDialog(title: String, onSelected: (List<Int>) -> Unit) {
+        val dialogBinding = com.voicewolf.app.databinding.DialogSelectNumbersMultiBinding.inflate(layoutInflater)
+        dialogBinding.titleText.text = "$title（可多选）"
+
+        val activePlayers = viewModel.getActivePlayers()
+        val selectedNumbers = mutableSetOf<Int>()
+        val buttons = mutableMapOf<Int, com.google.android.material.button.MaterialButton>()
+
+        // Populate number grid with toggle buttons
+        dialogBinding.numberGrid.removeAllViews()
+        activePlayers.forEach { player ->
+            val btn = com.google.android.material.button.MaterialButton(this).apply {
+                text = "${player.id}"
+                textSize = 14f
+                layoutParams = androidx.gridlayout.widget.GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                    columnSpec = androidx.gridlayout.widget.GridLayout.spec(androidx.gridlayout.widget.GridLayout.UNDEFINED, 1f)
+                    setMargins(4, 4, 4, 4)
+                }
+            }
+            btn.setOnClickListener {
+                if (selectedNumbers.contains(player.id)) {
+                    selectedNumbers.remove(player.id)
+                    btn.setBackgroundColor(ContextCompat.getColor(context, android.R.color.darker_gray))
+                } else {
+                    selectedNumbers.add(player.id)
+                    btn.setBackgroundColor(ContextCompat.getColor(context, R.color.teal_700))
+                }
+                // Update selected text
+                dialogBinding.selectedText.text = if (selectedNumbers.isEmpty()) {
+                    "已选: 无"
+                } else {
+                    "已选: ${selectedNumbers.sorted().joinToString("、") { "${it}号" }}"
+                }
+            }
+            buttons[player.id] = btn
+            dialogBinding.numberGrid.addView(btn)
+        }
+
+        AlertDialog.Builder(this)
+            .setView(dialogBinding.root)
+            .setPositiveButton("确认") { _, _ ->
+                onSelected(selectedNumbers.sorted())
             }
             .setNegativeButton("取消", null)
             .show()
@@ -270,26 +604,29 @@ class MainActivity : AppCompatActivity() {
         val dialogBinding = DialogAddVoteBinding.inflate(layoutInflater)
         val currentDay = viewModel.currentDay.value ?: 1
 
-        // Set target spinner (add abstain option)
-        val targetNames = arrayOf("弃票") + (1..12).map { "${it}号" }.toTypedArray()
+        // Get active players
+        val activePlayers = viewModel.getActivePlayers()
+
+        // Set target spinner with dynamic player list (add abstain option)
+        val targetNames = arrayOf("弃票") + activePlayers.map { "${it.id}号" }.toTypedArray()
         val targetAdapter = android.widget.ArrayAdapter(this, android.R.layout.simple_spinner_item, targetNames)
         targetAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         dialogBinding.spinnerTarget.adapter = targetAdapter
 
-        // Create voter checkboxes in grid (4 columns, 3 rows)
+        // Create voter checkboxes dynamically
         voterCheckboxes.clear()
         dialogBinding.votersGrid.removeAllViews()
-        for (i in 1..12) {
+        activePlayers.forEach { player ->
             val checkBox = CheckBox(this).apply {
-                text = "${i}号"
-                setTextColor(resources.getColor(android.R.color.primary_text_light, null))
+                text = "${player.id}号"
+                setTextColor(ContextCompat.getColor(context, android.R.color.primary_text_light))
                 layoutParams = androidx.gridlayout.widget.GridLayout.LayoutParams().apply {
                     width = 0
                     height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
                     columnSpec = androidx.gridlayout.widget.GridLayout.spec(androidx.gridlayout.widget.GridLayout.UNDEFINED, 1f)
                 }
             }
-            voterCheckboxes[i] = checkBox
+            voterCheckboxes[player.id] = checkBox
             dialogBinding.votersGrid.addView(checkBox)
         }
 
@@ -297,7 +634,7 @@ class MainActivity : AppCompatActivity() {
         var lastTarget = -1
         dialogBinding.spinnerTarget.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
-                val targetId = if (position == 0) 0 else position
+                val targetId = if (position == 0) 0 else activePlayers[position - 1].id
 
                 // Save previous selections if valid target was selected
                 if (lastTarget > 0) {
@@ -329,7 +666,7 @@ class MainActivity : AppCompatActivity() {
             .setView(dialogBinding.root)
             .setPositiveButton("完成") { _, _ ->
                 val targetPosition = dialogBinding.spinnerTarget.selectedItemPosition
-                val targetId = if (targetPosition == 0) 0 else targetPosition
+                val targetId = if (targetPosition == 0) 0 else activePlayers[targetPosition - 1].id
 
                 // Save votes for current target
                 if (targetId > 0) {
@@ -440,7 +777,7 @@ class MainActivity : AppCompatActivity() {
     private fun showResetConfirmDialog() {
         AlertDialog.Builder(this)
             .setTitle("确认重置")
-            .setMessage("确定要重置游戏吗？所有记录将被清空。")
+            .setMessage("确定要重置游戏吗？所有记录将被清空，玩家数量将恢复为12人。")
             .setPositiveButton("确认") { _, _ ->
                 viewModel.resetGame()
                 Toast.makeText(this, "游戏已重置", Toast.LENGTH_SHORT).show()
