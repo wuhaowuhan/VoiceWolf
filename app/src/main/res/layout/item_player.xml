@@ -6,21 +6,14 @@
     android:layout_height="wrap_content"
     app:cardCornerRadius="30dp"
     app:cardElevation="4dp"
-    app:cardBackgroundColor="@color/white"
+    app:cardBackgroundColor="@android:color/transparent"
     app:strokeWidth="2dp"
     app:strokeColor="@color/border_default">
 
     <FrameLayout
         android:layout_width="60dp"
-        android:layout_height="60dp">
-
-        <!-- Player avatar/background -->
-        <ImageView
-            android:id="@+id/playerAvatar"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            android:src="@drawable/player_avatar" />
+        android:layout_height="60dp"
+        android:background="@drawable/player_avatar">
 
         <!-- Player number overlay -->
         <TextView
