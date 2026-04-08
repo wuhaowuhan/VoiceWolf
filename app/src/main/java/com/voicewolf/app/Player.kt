@@ -8,7 +8,8 @@ data class Player(
     val name: String = "Player $id",
     val isAlive: Boolean = true,
     val role: Role = Role.UNKNOWN,
-    val markedRole: MarkedRole = MarkedRole.NONE
+    val markedRole: MarkedRole = MarkedRole.NONE,
+    val isActive: Boolean = true  // 玩家是否在当前游戏中（用于动态人数）
 ) {
     /**
      * Marked role for recording player analysis
