@@ -12,9 +12,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
+import com.google.android.material.card.MaterialCardView
 import com.voicewolf.app.databinding.ActivityMainBinding
 import com.voicewolf.app.databinding.DialogAddSpeechBinding
 import com.voicewolf.app.databinding.DialogAddVoteBinding
@@ -259,9 +259,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Update border color based on marked role faction
-        val cardView = playerView as CardView
+        val cardView = playerView as MaterialCardView
         val borderColor = when {
-            player.markedRole.isMarkedEvil() -> ContextCompat.getColor(this, R.color.border_werewolf)
+            player.isMarkedEvil() -> ContextCompat.getColor(this, R.color.border_werewolf)
             player.markedRole != Player.MarkedRole.NONE -> ContextCompat.getColor(this, R.color.border_good)
             else -> ContextCompat.getColor(this, R.color.border_default)
         }
@@ -517,7 +517,7 @@ class MainActivity : AppCompatActivity() {
             btn.setOnClickListener {
                 selectedNumber = player.id
                 // Update button appearance to show selection
-                btn.setBackgroundColor(ContextCompat.getColor(context, R.color.teal_700))
+                btn.setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.teal_700))
             }
             dialogBinding.numberGrid.addView(btn)
         }
@@ -575,10 +575,10 @@ class MainActivity : AppCompatActivity() {
             btn.setOnClickListener {
                 if (selectedNumbers.contains(player.id)) {
                     selectedNumbers.remove(player.id)
-                    btn.setBackgroundColor(ContextCompat.getColor(context, android.R.color.darker_gray))
+                    btn.setBackgroundColor(ContextCompat.getColor(this@MainActivity, android.R.color.darker_gray))
                 } else {
                     selectedNumbers.add(player.id)
-                    btn.setBackgroundColor(ContextCompat.getColor(context, R.color.teal_700))
+                    btn.setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.teal_700))
                 }
                 // Update selected text
                 dialogBinding.selectedText.text = if (selectedNumbers.isEmpty()) {
