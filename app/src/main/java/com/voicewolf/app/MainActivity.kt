@@ -277,7 +277,6 @@ class MainActivity : AppCompatActivity() {
 
         // Update dead overlay
         binding.deadOverlay.visibility = if (!player.isAlive) View.VISIBLE else View.GONE
-
         // Update remove button visibility (only for 13-15, game not started)
         binding.btnRemove.visibility = if (playerId >= 13 && !viewModel.hasGameStarted()) {
             View.VISIBLE
@@ -395,6 +394,9 @@ class MainActivity : AppCompatActivity() {
         }
         dialogBinding.btnTemplateGuard.setOnClickListener {
             appendText(dialogBinding.editContent, "跳守卫 ")
+        }
+        dialogBinding.btnTemplateVillager.setOnClickListener {
+            appendText(dialogBinding.editContent, "跳平民 ")
         }
 
         // Single number selection templates
