@@ -177,6 +177,14 @@ class MainActivity : AppCompatActivity() {
     private fun createPlayerView(playerId: Int): View {
         val binding = ItemPlayerBinding.inflate(layoutInflater)
 
+        // Set layout params with fixed size and margin (same as left column players)
+        val density = resources.displayMetrics.density
+        val sizePx = (60 * density).toInt()
+        val marginPx = (4 * density).toInt()
+        binding.root.layoutParams = LinearLayout.LayoutParams(sizePx, sizePx).apply {
+            setMargins(marginPx, marginPx, marginPx, marginPx)
+        }
+
         // Set player number
         binding.playerNumber.text = playerId.toString()
 
