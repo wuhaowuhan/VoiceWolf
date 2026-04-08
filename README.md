@@ -1,82 +1,105 @@
-# VoiceWolf - 狼人杀面杀辅助软件
+# 狼人杀助手
 
-专业的狼人杀面杀辅助工具，帮助玩家记录发言和投票情况。
+面杀狼人杀游戏辅助工具，帮助玩家记录发言和投票情况。
 
 ---
 
 ## 功能说明
 
-### 玩家管理
-- 支持 12 人标准局
-- 实时显示玩家存活/出局状态
-- 角色身份标记和管理
-- 点击玩家查看详细信息，长按快速操作
+### 玩家人数动态调整
+- **默认人数**：12人
+- **人数范围**：8-15人
+- 游戏开始后人数锁定，不可增减
+- 重置游戏恢复默认12人
 
-### 发言记录
-- **发言计时器**：默认 180 秒倒计时，可自定义时长
-- **发言总结**：记录每轮发言内容，支持编辑和查看历史
-- **发言类型**：常规发言、遗言、反驳三种类型
-- **时长统计**：自动记录每次发言的时长
+**增减按钮：**
+- 加号按钮：右列最下方，点击增加玩家（最多15人）
+- 减号按钮：13/14/15号玩家卡片内，点击移除该玩家
+- 删除玩家后号码不变（删除13号，14/15号仍保留）
 
-### 投票系统
-- **投票记录**：记录每位玩家的投票对象
-- **实时统计**：显示当前轮次各玩家得票数
-- **历史记录**：查看所有轮次的投票情况
-- **自动识别**：高亮显示得票最多的玩家
+### 发言模板快速输入
+支持快速插入常用发言模板：
 
-### 游戏模式
-支持 6 种常见狼人杀版型：
-- 标准场（12 人局）
-- 狼美骑士
-- 机械狼通灵师
-- 白狼王
-- 石像鬼守墓人
-- 预言家丘比特
+**预言家类：**
+- 跳预言家（直接插入）
+- 查验X号（号码单选 + 好人/狼人）
+- 警徽流X号（多个号码）
 
-### 角色身份
-支持 10 种角色：
-- **好人阵营**：村民、预言家、女巫、猎人、守卫、骑士、通灵师
-- **狼人阵营**：狼人、狼美人、机械狼
+**女巫类：**
+- 跳女巫（直接插入）
+- 银水X号（号码单选）
+- 毒X号（号码单选）
 
-### 游戏状态
-- 白天/夜晚状态颜色区分（蓝色/紫色）
-- 轮次信息实时显示
-- 出局玩家列表展示
-- 当前发言玩家高亮提示
+**守卫类：**
+- 跳守卫（直接插入）
+- 盾X号（号码单选）
+
+**通用类：**
+- 跳平民（直接插入）
+- 保X号（多个号码）
+- 踩X号（多个号码）
+- 觉得狼在X号（多个号码）
+
+### 身份标记
+- **快捷入口**：玩家卡片右上角铅笔图标
+- **边框颜色**：好人阵营绿色边框，狼人阵营红色边框
+- **角色角标**：卡片上方显示角色简称
+- **出局显示**：灰色遮罩 + X标记
+
+**支持角色：**
+- 好人阵营：预言家、女巫、猎人、守卫、好人、平民
+- 狼人阵营：狼人、机械狼
+
+### 投票记录
+- 记录每位玩家的投票对象
+- 实时统计各玩家得票数
+- 支持弃票选项
+
+---
+
+## 界面布局
+
+```
+┌─────────────────────────────────────┐
+│  第X天                      [菜单] │
+├─────────────────────────────────────┤
+│ ┌───┐           ┌───┐              │
+│ │ 1 │           │ 7 │              │
+│ │ 2 │   记录    │ 8 │              │
+│ │ 3 │   面板    │ 9 │              │
+│ │ 4 │           │10 │              │
+│ │ 5 │           │11 │              │
+│ │ 6 │           │12 │  [+]         │
+│ └───┘           └───┘              │
+├─────────────────────────────────────┤
+│ [发言] [投票] [下一天] [重置]       │
+└─────────────────────────────────────┘
+```
 
 ---
 
 ## 使用说明
 
-1. **开始游戏**：选择游戏模式后点击"开始游戏"
-2. **记录发言**：点击玩家 → "发言总结回顾" → 添加记录
-3. **记录投票**：设置 → "记录投票" → 选择投票者和目标
-4. **标记出局**：设置 → "标记玩家出局"
-5. **切换昼夜**：点击"进入白天"/"进入夜晚"按钮
-6. **查看统计**：设置 → "查看投票统计"
+1. **调整人数**：点击右列加号增加玩家（游戏未开始时）
+2. **记录发言**：点击玩家或底部"发言"按钮，使用模板快速输入
+3. **标记身份**：点击玩家卡片右上角铅笔图标
+4. **标记出局**：长按玩家卡片切换存活/出局状态
+5. **记录投票**：点击"投票"按钮，选择目标和投票人
+6. **下一天**：点击"下一天"进入下一轮
+7. **重置游戏**：点击"重置"清空所有记录
+
+---
+
+## 技术栈
+
+- Kotlin 1.9.20
+- Android SDK 34
+- MVVM 架构
+- ViewBinding
+- Material Design
 
 ---
 
 ## License
 
 MIT License
-
-Copyright (c) 2026 VoiceWolf
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
