@@ -376,36 +376,51 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showAddSpeechDialog(playerId: Int? = null) {
-        val dialogBinding = DialogAddSpeechBinding.inflate(layoutInflater)
-        val currentDay = viewModel.currentDay.value ?: 1
+        val dialogView = android.view.View.inflate(this, R.layout.dialog_add_speech, null)
+        val templateContainer = dialogView.findViewById<android.widget.LinearLayout>(R.id.templateContainer)
+        val spinnerPlayer = dialogView.findViewById<android.widget.Spinner>(R.id.spinnerPlayer)
+        val editContent = dialogView.findViewById<android.widget.EditText>(R.id.editContent)
 
-        // Set player spinner
-        val playerNames = (1..12).map { "${it}号" }.toTypedArray()
+        val currentDay = viewModel.currentDay.value ?: 1
+        val setup = viewModel.currentSetup.value
+
+        // Create template buttons based on setup
+        createTemplateButtons(templateContainer, setup, editContent)
+
+        // Set player spinner - dynamic player count
+        val activePlayers = viewModel.getActivePlayers()
+        val playerNames = activePlayers.map { "${it.id}号" }.toTypedArray()
         val adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_spinner_item, playerNames)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        dialogBinding.spinnerPlayer.adapter = adapter
+        spinnerPlayer.adapter = adapter
 
         // Set selected player if provided
         if (playerId != null) {
-            dialogBinding.spinnerPlayer.setSelection(playerId - 1)
+            val index = activePlayers.indexOfFirst { it.id == playerId }
+            if (index >= 0) {
+                spinnerPlayer.setSelection(index)
+            }
         }
 
         // Load existing record if any
         val existingRecord = playerId?.let { viewModel.getSpeechRecordForPlayer(it, currentDay) }
         if (existingRecord != null) {
-            dialogBinding.editContent.setText(existingRecord.summary)
+            editContent.setText(existingRecord.summary)
         }
 
         AlertDialog.Builder(this)
             .setTitle("记录发言 - 第${currentDay}天")
-            .setView(dialogBinding.root)
+            .setView(dialogView)
             .setPositiveButton("保存") { _, _ ->
-                val selectedPlayerId = dialogBinding.spinnerPlayer.selectedItemPosition + 1
-                val content = dialogBinding.editContent.text.toString()
+                val selectedIndex = spinnerPlayer.selectedItemPosition
+                if (selectedIndex >= 0 && selectedIndex < activePlayers.size) {
+                    val selectedPlayerId = activePlayers[selectedIndex].id
+                    val content = editContent.text.toString()
 
-                if (content.isNotBlank()) {
-                    viewModel.addSpeechRecord(selectedPlayerId, currentDay, content)
-                    Toast.makeText(this, "发言已记录", Toast.LENGTH_SHORT).show()
+                    if (content.isNotBlank()) {
+                        viewModel.addSpeechRecord(selectedPlayerId, currentDay, content)
+                        Toast.makeText(this, "发言已记录", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
             .setNegativeButton("取消", null)
@@ -416,18 +431,21 @@ class MainActivity : AppCompatActivity() {
         val dialogBinding = DialogAddVoteBinding.inflate(layoutInflater)
         val currentDay = viewModel.currentDay.value ?: 1
 
+        // Get active players dynamically
+        val activePlayers = viewModel.getActivePlayers()
+
         // Set target spinner (add abstain option)
-        val targetNames = arrayOf("弃票") + (1..12).map { "${it}号" }.toTypedArray()
+        val targetNames = arrayOf("弃票") + activePlayers.map { "${it.id}号" }.toTypedArray()
         val targetAdapter = android.widget.ArrayAdapter(this, android.R.layout.simple_spinner_item, targetNames)
         targetAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         dialogBinding.spinnerTarget.adapter = targetAdapter
 
-        // Create voter checkboxes in grid (4 columns, 3 rows)
+        // Create voter checkboxes in grid - dynamic count
         voterCheckboxes.clear()
         dialogBinding.votersGrid.removeAllViews()
-        for (i in 1..12) {
+        activePlayers.forEach { player ->
             val checkBox = CheckBox(this).apply {
-                text = "${i}号"
+                text = "${player.id}号"
                 setTextColor(resources.getColor(R.color.white, null))
                 layoutParams = androidx.gridlayout.widget.GridLayout.LayoutParams().apply {
                     width = 0
@@ -435,7 +453,7 @@ class MainActivity : AppCompatActivity() {
                     columnSpec = androidx.gridlayout.widget.GridLayout.spec(androidx.gridlayout.widget.GridLayout.UNDEFINED, 1f)
                 }
             }
-            voterCheckboxes[i] = checkBox
+            voterCheckboxes[player.id] = checkBox
             dialogBinding.votersGrid.addView(checkBox)
         }
 
@@ -443,7 +461,7 @@ class MainActivity : AppCompatActivity() {
         var lastTarget = -1
         dialogBinding.spinnerTarget.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
-                val targetId = if (position == 0) 0 else position
+                val targetId = if (position == 0) 0 else activePlayers[position - 1].id
 
                 // Save previous selections if valid target was selected
                 if (lastTarget > 0) {
@@ -475,7 +493,7 @@ class MainActivity : AppCompatActivity() {
             .setView(dialogBinding.root)
             .setPositiveButton("完成") { _, _ ->
                 val targetPosition = dialogBinding.spinnerTarget.selectedItemPosition
-                val targetId = if (targetPosition == 0) 0 else targetPosition
+                val targetId = if (targetPosition == 0) 0 else activePlayers[targetPosition - 1].id
 
                 // Save votes for current target
                 if (targetId > 0) {
@@ -724,5 +742,184 @@ class MainActivity : AppCompatActivity() {
                 buttonRow.addView(button)
             }
         }
+    }
+
+    private fun handleTemplateClick(btn: TemplateButton, editText: android.widget.EditText) {
+        when (btn.actionType) {
+            TemplateActionType.DIRECT_INSERT -> {
+                // 直接插入文字
+                val insertText = when (btn.text) {
+                    "跳预言" -> "跳预言家 "
+                    "跳通灵" -> "跳通灵师 "
+                    "跳女巫" -> "跳女巫 "
+                    "跳守卫" -> "跳守卫 "
+                    "跳猎人" -> "跳猎人 "
+                    "跳骑士" -> "跳骑士 "
+                    "跳白痴" -> "跳白痴 "
+                    "跳狼王" -> "跳狼王 "
+                    "跳狼美" -> "跳狼美人 "
+                    "跳机械狼" -> "跳机械狼 "
+                    "跳平民" -> "跳平民 "
+                    else -> "${btn.text} "
+                }
+                appendToEditText(editText, insertText)
+            }
+            TemplateActionType.SINGLE_SELECT -> {
+                showSingleSelectDialog(btn.text, editText)
+            }
+            TemplateActionType.MULTI_SELECT -> {
+                showMultiSelectDialog(btn.text, editText)
+            }
+            TemplateActionType.CHECK_SELECT -> {
+                showCheckSelectDialog(editText)
+            }
+        }
+    }
+
+    private fun appendToEditText(editText: android.widget.EditText, text: String) {
+        val currentText = editText.text.toString()
+        editText.setText(currentText + text)
+        editText.setSelection(editText.text.length)
+    }
+
+    private fun showSingleSelectDialog(templateName: String, editText: android.widget.EditText) {
+        val dialogView = android.view.View.inflate(this, R.layout.dialog_select_number, null)
+        val gridLayout = dialogView.findViewById<android.widget.GridLayout>(R.id.numbersGrid)
+
+        // Populate grid with player numbers
+        val activePlayers = viewModel.getActivePlayers()
+        activePlayers.forEach { player ->
+            val button = com.google.android.material.button.MaterialButton(this).apply {
+                text = "${player.id}号"
+                layoutParams = android.widget.GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = android.widget.GridLayout.LayoutParams.WRAP_CONTENT
+                    columnSpec = android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1f)
+                    setMargins(4, 4, 4, 4)
+                }
+                setOnClickListener {
+                    val resultText = "${templateName}${player.id}号 "
+                    appendToEditText(editText, resultText)
+                    (dialogView.parent as? android.app.Dialog)?.dismiss()
+                }
+            }
+            gridLayout.addView(button)
+        }
+
+        AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun showMultiSelectDialog(templateName: String, editText: android.widget.EditText) {
+        val dialogView = android.view.View.inflate(this, R.layout.dialog_select_numbers_multi, null)
+        val gridLayout = dialogView.findViewById<android.widget.GridLayout>(R.id.numbersGrid)
+        val selectedText = dialogView.findViewById<android.widget.TextView>(R.id.selectedText)
+
+        val selectedIds = mutableSetOf<Int>()
+
+        // Populate grid with player buttons
+        val activePlayers = viewModel.getActivePlayers()
+        activePlayers.forEach { player ->
+            val button = com.google.android.material.button.MaterialButton(this).apply {
+                text = "${player.id}号"
+                layoutParams = android.widget.GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = android.widget.GridLayout.LayoutParams.WRAP_CONTENT
+                    columnSpec = android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1f)
+                    setMargins(4, 4, 4, 4)
+                }
+                setOnClickListener {
+                    if (selectedIds.contains(player.id)) {
+                        selectedIds.remove(player.id)
+                        strokeWidth = 0
+                    } else {
+                        selectedIds.add(player.id)
+                        strokeWidth = 2
+                        strokeColor = resources.getColorStateList(R.color.white, null)
+                    }
+                    selectedText.text = "已选: ${selectedIds.sorted().joinToString("号 ") { "$it" }}号"
+                }
+            }
+            gridLayout.addView(button)
+        }
+
+        AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setPositiveButton("确认") { _, _ ->
+                if (selectedIds.isNotEmpty()) {
+                    val resultText = "${templateName} ${selectedIds.sorted().joinToString("号 ") { "$it" }}号 "
+                    appendToEditText(editText, resultText)
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun showCheckSelectDialog(editText: android.widget.EditText) {
+        val dialogView = android.view.View.inflate(this, R.layout.dialog_select_check, null)
+        val gridLayout = dialogView.findViewById<android.widget.GridLayout>(R.id.numbersGrid)
+        val btnGood = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnGood)
+        val btnEvil = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnEvil)
+
+        var selectedPlayerId: Int? = null
+        var selectedResult: String? = null
+
+        // Populate grid with player buttons
+        val activePlayers = viewModel.getActivePlayers()
+        activePlayers.forEach { player ->
+            val button = com.google.android.material.button.MaterialButton(this).apply {
+                text = "${player.id}号"
+                layoutParams = android.widget.GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = android.widget.GridLayout.LayoutParams.WRAP_CONTENT
+                    columnSpec = android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1f)
+                    setMargins(4, 4, 4, 4)
+                }
+                setOnClickListener {
+                    // Clear previous selection using for loop (API compatibility)
+                    for (i in 0 until gridLayout.childCount) {
+                        val child = gridLayout.getChildAt(i)
+                        if (child is com.google.android.material.button.MaterialButton) {
+                            child.strokeWidth = 0
+                        }
+                    }
+                    // Highlight this one
+                    selectedPlayerId = player.id
+                    strokeWidth = 2
+                    strokeColor = resources.getColorStateList(R.color.white, null)
+                }
+            }
+            gridLayout.addView(button)
+        }
+
+        // Result buttons
+        btnGood.setOnClickListener {
+            selectedResult = "好人"
+            btnGood.strokeWidth = 2
+            btnGood.strokeColor = resources.getColorStateList(R.color.white, null)
+            btnEvil.strokeWidth = 0
+        }
+
+        btnEvil.setOnClickListener {
+            selectedResult = "狼人"
+            btnEvil.strokeWidth = 2
+            btnEvil.strokeColor = resources.getColorStateList(R.color.white, null)
+            btnGood.strokeWidth = 0
+        }
+
+        AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setPositiveButton("确认") { _, _ ->
+                if (selectedPlayerId != null && selectedResult != null) {
+                    val resultText = "查验${selectedPlayerId}号 $selectedResult "
+                    appendToEditText(editText, resultText)
+                } else {
+                    Toast.makeText(this, "请选择玩家和查验结果", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
 }
