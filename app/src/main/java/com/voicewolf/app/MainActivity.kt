@@ -200,13 +200,23 @@ class MainActivity : AppCompatActivity() {
         val playerView = playerViews[playerId] ?: return
         val player = viewModel.getPlayerById(playerId) ?: return
 
-        val roleText = playerView.findViewById<TextView>(R.id.roleText)
+        // Use ItemPlayerBinding to access views
+        val binding = try {
+            ItemPlayerBinding.bind(playerView)
+        } catch (e: Exception) {
+            // For static views in left column, use findViewById
+            null
+        }
 
+        val roleText = binding?.roleText ?: playerView.findViewById<TextView>(R.id.roleText)
+        val deadOverlay = binding?.deadOverlay ?: playerView.findViewById<android.widget.FrameLayout>(R.id.deadOverlay)
+        val playerCard = binding?.playerCard ?: playerView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.playerCard)
+
+        // Role text display
         if (player.markedRole != Player.MarkedRole.NONE) {
             roleText?.visibility = android.view.View.VISIBLE
             roleText?.text = player.getMarkedRoleDisplayName()
 
-            // Set role text background color based on role
             val bgColorRes = when (player.markedRole) {
                 Player.MarkedRole.SEER -> R.color.role_seer
                 Player.MarkedRole.SEER_MIRROR -> R.color.role_seer_mirror
@@ -226,6 +236,17 @@ class MainActivity : AppCompatActivity() {
             roleText?.setBackgroundColor(resources.getColor(bgColorRes, null))
         } else {
             roleText?.visibility = android.view.View.GONE
+        }
+
+        // Dead overlay
+        deadOverlay?.visibility = if (player.isAlive) android.view.View.GONE else android.view.View.VISIBLE
+
+        // Card stroke color based on faction
+        if (player.markedRole != Player.MarkedRole.NONE) {
+            val strokeColorRes = if (player.isMarkedEvil()) R.color.border_werewolf else R.color.border_good
+            playerCard?.strokeColor = resources.getColor(strokeColorRes, null)
+        } else {
+            playerCard?.strokeColor = resources.getColor(R.color.border_default, null)
         }
     }
 
@@ -594,5 +615,114 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             .show()
+    }
+
+    // Template button configuration
+    private data class TemplateButton(
+        val text: String,
+        val category: String,
+        val role: Player.MarkedRole?,
+        val actionType: TemplateActionType
+    )
+
+    private enum class TemplateActionType {
+        DIRECT_INSERT,      // 直接插入文字
+        SINGLE_SELECT,      // 单选号码
+        MULTI_SELECT,       // 多选号码
+        CHECK_SELECT        // 查验（号码+好人/狼人）
+    }
+
+    private val templateButtons = listOf(
+        // 预言家类
+        TemplateButton("跳预言", "预言家", Player.MarkedRole.SEER, TemplateActionType.DIRECT_INSERT),
+        TemplateButton("查验X", "预言家", Player.MarkedRole.SEER, TemplateActionType.CHECK_SELECT),
+        TemplateButton("警徽流", "预言家", Player.MarkedRole.SEER, TemplateActionType.MULTI_SELECT),
+        // 通灵师类
+        TemplateButton("跳通灵", "通灵师", Player.MarkedRole.SEER_MIRROR, TemplateActionType.DIRECT_INSERT),
+        // 女巫类
+        TemplateButton("跳女巫", "女巫", Player.MarkedRole.WITCH, TemplateActionType.DIRECT_INSERT),
+        TemplateButton("银水X", "女巫", Player.MarkedRole.WITCH, TemplateActionType.SINGLE_SELECT),
+        TemplateButton("毒X", "女巫", Player.MarkedRole.WITCH, TemplateActionType.SINGLE_SELECT),
+        // 守卫类
+        TemplateButton("跳守卫", "守卫", Player.MarkedRole.GUARD, TemplateActionType.DIRECT_INSERT),
+        TemplateButton("盾X", "守卫", Player.MarkedRole.GUARD, TemplateActionType.SINGLE_SELECT),
+        // 猎人类
+        TemplateButton("跳猎人", "猎人", Player.MarkedRole.HUNTER, TemplateActionType.DIRECT_INSERT),
+        // 骑士类
+        TemplateButton("跳骑士", "骑士", Player.MarkedRole.KNIGHT, TemplateActionType.DIRECT_INSERT),
+        // 白痴类
+        TemplateButton("跳白痴", "白痴", Player.MarkedRole.IDIOT, TemplateActionType.DIRECT_INSERT),
+        // 狼王类
+        TemplateButton("跳狼王", "狼王", Player.MarkedRole.WOLF_KING, TemplateActionType.DIRECT_INSERT),
+        // 狼美人类
+        TemplateButton("跳狼美", "狼美人", Player.MarkedRole.WOLF_BEAUTY, TemplateActionType.DIRECT_INSERT),
+        // 机械狼类
+        TemplateButton("跳机械狼", "机械狼", Player.MarkedRole.MECHANICAL_WOLF, TemplateActionType.DIRECT_INSERT),
+        // 通用类（始终显示）
+        TemplateButton("跳平民", "通用", null, TemplateActionType.MULTI_SELECT),
+        TemplateButton("保X", "通用", null, TemplateActionType.MULTI_SELECT),
+        TemplateButton("踩X", "通用", null, TemplateActionType.MULTI_SELECT),
+        TemplateButton("狼在X", "通用", null, TemplateActionType.MULTI_SELECT)
+    )
+
+    private fun createTemplateButtons(
+        container: android.widget.LinearLayout,
+        setup: GameSetup?,
+        editText: android.widget.EditText
+    ) {
+        container.removeAllViews()
+
+        // Group buttons by category
+        val categories = templateButtons.groupBy { it.category }
+
+        categories.forEach { (category, buttons) ->
+            // Filter buttons based on setup (null role = always show)
+            val visibleButtons = buttons.filter { btn ->
+                btn.role == null || (setup != null && setup.hasRole(btn.role))
+            }
+
+            if (visibleButtons.isEmpty()) return@forEach
+
+            // Category label
+            val categoryLabel = android.widget.TextView(this).apply {
+                text = "【${category}】"
+                setTextColor(resources.getColor(R.color.white, null))
+                textSize = 12f
+                layoutParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, 8, 0, 4)
+                }
+            }
+            container.addView(categoryLabel)
+
+            // Button row
+            val buttonRow = android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.HORIZONTAL
+                layoutParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+            container.addView(buttonRow)
+
+            // Add buttons
+            visibleButtons.forEach { btn ->
+                val button = com.google.android.material.button.MaterialButton(this).apply {
+                    text = btn.text
+                    layoutParams = android.widget.LinearLayout.LayoutParams(
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        setMargins(4, 4, 4, 4)
+                    }
+                    setOnClickListener {
+                        handleTemplateClick(btn, editText)
+                    }
+                }
+                buttonRow.addView(button)
+            }
+        }
     }
 }
