@@ -34,9 +34,9 @@ class GameViewModel : ViewModel() {
     private val _allRecordsText = MutableLiveData("")
     val allRecordsText: LiveData<String> = _allRecordsText
 
-    // Current game setup
-    private val _currentSetup = MutableLiveData<GameSetup>()
-    val currentSetup: LiveData<GameSetup> = _currentSetup
+    // Current game setup (nullable - may not be set yet)
+    private val _currentSetup = MutableLiveData<GameSetup?>()
+    val currentSetup: LiveData<GameSetup?> = _currentSetup
 
     // Constants
     companion object {
@@ -46,15 +46,20 @@ class GameViewModel : ViewModel() {
     }
 
     init {
-        initializePlayers()
+        initializePlayers(DEFAULT_PLAYERS)
         updateDisplayInfo()
     }
 
-    private fun initializePlayers() {
-        // Create default 12 players
-        val playerList = (1..DEFAULT_PLAYERS).map { Player(id = it) }
+    fun initializePlayers(count: Int) {
+        // Create players with specified count (12-15)
+        val validCount = count.coerceIn(MIN_PLAYERS, MAX_PLAYERS)
+        val playerList = (1..validCount).map { Player(id = it) }
         _players.value = playerList
         updateActivePlayerIds()
+    }
+
+    private fun initializePlayers() {
+        initializePlayers(DEFAULT_PLAYERS)
     }
 
     private fun updateActivePlayerIds() {

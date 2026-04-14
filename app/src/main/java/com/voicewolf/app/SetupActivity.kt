@@ -6,15 +6,56 @@ import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 
 class SetupActivity : AppCompatActivity() {
+
+    private var selectedPlayerCount = 12  // Default player count
+    private val playerCountButtons = mutableListOf<MaterialButton>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_setup)
 
+        setupPlayerCountButtons()
         setupSetupCards()
+    }
+
+    private fun setupPlayerCountButtons() {
+        val btn12 = findViewById<MaterialButton>(R.id.btnPlayer12)
+        val btn13 = findViewById<MaterialButton>(R.id.btnPlayer13)
+        val btn14 = findViewById<MaterialButton>(R.id.btnPlayer14)
+        val btn15 = findViewById<MaterialButton>(R.id.btnPlayer15)
+
+        playerCountButtons.addAll(listOf(btn12, btn13, btn14, btn15))
+
+        // Set click listeners
+        btn12.setOnClickListener { selectPlayerCount(12) }
+        btn13.setOnClickListener { selectPlayerCount(13) }
+        btn14.setOnClickListener { selectPlayerCount(14) }
+        btn15.setOnClickListener { selectPlayerCount(15) }
+
+        // Initial selection
+        selectPlayerCount(12)
+    }
+
+    private fun selectPlayerCount(count: Int) {
+        selectedPlayerCount = count
+
+        // Update button states
+        playerCountButtons.forEach { btn ->
+            if (btn.text.toString().toIntOrNull() == count) {
+                // Selected button - use filled style
+                btn.setBackgroundColor(resources.getColor(R.color.teal_700, null))
+                btn.setStrokeWidth(0)
+            } else {
+                // Unselected button - use outlined style
+                btn.setBackgroundColor(resources.getColor(R.color.info_panel, null))
+                btn.setStrokeWidth(2)
+                btn.setStrokeColorResource(R.color.border_default)
+            }
+        }
     }
 
     private fun setupSetupCards() {
@@ -35,7 +76,7 @@ class SetupActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 0, 0, (16 * density).toInt())
+                setMargins(0, 0, 0, (12 * density).toInt())
             }
             radius = 12f * density
             cardElevation = 4f * density
@@ -46,7 +87,7 @@ class SetupActivity : AppCompatActivity() {
             isFocusable = true
 
             setOnClickListener {
-                startMainActivity(setup)
+                startMainActivity(setup, selectedPlayerCount)
             }
         }
 
@@ -63,13 +104,13 @@ class SetupActivity : AppCompatActivity() {
         val nameText = TextView(this).apply {
             text = setup.name
             setTextColor(resources.getColor(R.color.white, null))
-            textSize = 18f
+            textSize = 16f
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 0, 0, (8 * density).toInt())
+                setMargins(0, 0, 0, (6 * density).toInt())
             }
         }
         contentLayout.addView(nameText)
@@ -78,7 +119,7 @@ class SetupActivity : AppCompatActivity() {
         val goodText = TextView(this).apply {
             text = "好人：${setup.getGoodRolesSummary()}"
             setTextColor(resources.getColor(R.color.border_good, null))
-            textSize = 14f
+            textSize = 12f
             gravity = Gravity.CENTER
         }
         contentLayout.addView(goodText)
@@ -87,7 +128,7 @@ class SetupActivity : AppCompatActivity() {
         val evilText = TextView(this).apply {
             text = "狼人：${setup.getEvilRolesSummary()}"
             setTextColor(resources.getColor(R.color.wolf_red, null))
-            textSize = 14f
+            textSize = 12f
             gravity = Gravity.CENTER
         }
         contentLayout.addView(evilText)
@@ -96,9 +137,10 @@ class SetupActivity : AppCompatActivity() {
         return card
     }
 
-    private fun startMainActivity(setup: GameSetup) {
+    private fun startMainActivity(setup: GameSetup, playerCount: Int) {
         val intent = Intent(this, MainActivity::class.java).apply {
             putExtra("SETUP_NAME", setup.name)
+            putExtra("PLAYER_COUNT", playerCount)
         }
         startActivity(intent)
         finish()

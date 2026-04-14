@@ -97,6 +97,26 @@ data class Player(
     }
 }
 
+// Extension function for MarkedRole enum
+fun Player.MarkedRole.getMarkedRoleDisplayName(): String {
+    return when (this) {
+        Player.MarkedRole.NONE -> ""
+        Player.MarkedRole.SEER -> "预言"
+        Player.MarkedRole.SEER_MIRROR -> "通灵"
+        Player.MarkedRole.GOOD -> "好人"
+        Player.MarkedRole.WEREWOLF -> "狼人"
+        Player.MarkedRole.WOLF_KING -> "狼王"
+        Player.MarkedRole.WOLF_BEAUTY -> "狼美"
+        Player.MarkedRole.VILLAGER -> "平民"
+        Player.MarkedRole.WITCH -> "女巫"
+        Player.MarkedRole.HUNTER -> "猎人"
+        Player.MarkedRole.GUARD -> "守卫"
+        Player.MarkedRole.KNIGHT -> "骑士"
+        Player.MarkedRole.IDIOT -> "白痴"
+        Player.MarkedRole.MECHANICAL_WOLF -> "机械狼"
+    }
+}
+
 /**
  * Represents a speech record for a player
  */

@@ -38,14 +38,19 @@ class MainActivity : AppCompatActivity() {
         // Initialize ViewModel
         viewModel = ViewModelProvider(this)[GameViewModel::class.java]
 
-        // Receive setup from intent
+        // Receive setup and player count from intent
         setupName = intent.getStringExtra("SETUP_NAME")
+        val playerCount = intent.getIntExtra("PLAYER_COUNT", 12)
+
         if (setupName != null) {
             val setup = GameSetupPresets.getByName(setupName!!)
             if (setup != null) {
                 viewModel.setSetup(setup)
             }
         }
+
+        // Initialize players with specified count
+        viewModel.initializePlayers(playerCount)
 
         setupPlayerViews()
         setupButtons()
@@ -66,7 +71,7 @@ class MainActivity : AppCompatActivity() {
 
         // Set up left column players
         for (playerId in 1..6) {
-            setupPlayerCard(playerId, playerViews[playerId]!!, false)
+            setupPlayerCard(playerId, playerViews[playerId]!!)
         }
 
         // Right column: dynamic rendering based on active players
@@ -76,38 +81,28 @@ class MainActivity : AppCompatActivity() {
     private fun renderRightColumn() {
         val container = binding.rightColumnContainer
 
-        // Remove only player cards (not the add button)
-        // Find and remove views that are player cards (have playerNumber TextView)
+        // Remove all existing player cards
         val toRemove = mutableListOf<android.view.View>()
         for (i in 0 until container.childCount) {
             val child = container.getChildAt(i)
-            // Check if it's a player card (has playerNumber TextView) and not the add button
             if (child.findViewById<TextView>(R.id.playerNumber) != null) {
                 toRemove.add(child)
             }
         }
         toRemove.forEach { container.removeView(it) }
 
-        // Also clear from playerViews map for ID >= 7
+        // Clear playerViews map for ID >= 7
         playerViews.keys.filter { it >= 7 }.forEach { playerViews.remove(it) }
 
         // Get active players with ID >= 7
         val rightColumnPlayers = viewModel.getActivePlayers().filter { it.id >= 7 }.sortedBy { it.id }
 
-        // Add player cards dynamically (insert before add button)
+        // Add player cards dynamically
         rightColumnPlayers.forEach { player ->
             val playerCard = createPlayerCard(player.id)
-            // Insert at the end but before add button (add button is last)
-            container.addView(playerCard, container.childCount - 1)
+            container.addView(playerCard)
             playerViews[player.id] = playerCard
-            setupPlayerCard(player.id, playerCard, player.id >= 13)
-        }
-
-        // Add button visibility: show if count < 15 and game not started
-        binding.btnAddPlayer.visibility = if (!viewModel.hasGameStarted() && viewModel.getActivePlayerCount() < 15) {
-            android.view.View.VISIBLE
-        } else {
-            android.view.View.GONE
+            setupPlayerCard(player.id, playerCard)
         }
     }
 
@@ -117,7 +112,7 @@ class MainActivity : AppCompatActivity() {
         return binding.root
     }
 
-    private fun setupPlayerCard(playerId: Int, playerView: android.view.View, showRemoveButton: Boolean) {
+    private fun setupPlayerCard(playerId: Int, playerView: android.view.View) {
         val binding = ItemPlayerBinding.bind(playerView)
 
         // Set player number
@@ -143,20 +138,8 @@ class MainActivity : AppCompatActivity() {
             showMarkRoleDialog(playerId)
         }
 
-        // Remove button visibility (only for 13-15, game not started)
-        binding.btnRemove.visibility = if (showRemoveButton && !viewModel.hasGameStarted()) {
-            android.view.View.VISIBLE
-        } else {
-            android.view.View.GONE
-        }
-
-        // Remove button click
-        binding.btnRemove.setOnClickListener {
-            if (viewModel.removePlayer(playerId)) {
-                renderRightColumn()
-                Toast.makeText(this, "${playerId}号玩家已移除", Toast.LENGTH_SHORT).show()
-            }
-        }
+        // Hide remove button (not needed with fixed player count)
+        binding.btnRemove.visibility = android.view.View.GONE
     }
 
     private fun setupButtons() {
@@ -178,15 +161,6 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnMenu.setOnClickListener {
             showMenuDialog()
-        }
-
-        binding.btnAddPlayer.setOnClickListener {
-            if (viewModel.addPlayer()) {
-                renderRightColumn()
-                Toast.makeText(this, "已添加新玩家", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "无法添加玩家（已达上限或游戏已开始）", Toast.LENGTH_SHORT).show()
-            }
         }
     }
 

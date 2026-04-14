@@ -108,7 +108,7 @@
                 android:layout_margin="4dp" />
         </LinearLayout>
 
-        <!-- Right Column Container (dynamic: 7-N + add button) -->
+        <!-- Right Column Container (dynamic: 7-N) -->
         <LinearLayout
             android:id="@+id/rightColumnContainer"
             android:layout_width="wrap_content"
@@ -121,18 +121,6 @@
             app:layout_constraintTop_toTopOf="parent">
 
             <!-- Player views 7-N will be added dynamically -->
-
-            <!-- Add player button for 13-15 players -->
-            <ImageButton
-                android:id="@+id/btnAddPlayer"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_margin="4dp"
-                android:background="@color/teal_700"
-                android:contentDescription="添加玩家"
-                android:src="@android:drawable/ic_input_add"
-                android:tint="@color/white"
-                android:visibility="visible" />
         </LinearLayout>
 
         <!-- Center Panel - All Days Records -->
