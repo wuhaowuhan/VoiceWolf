@@ -16,14 +16,21 @@ data class Player(
      */
     enum class MarkedRole {
         NONE,
-        SEER,        // 预言家
-        GOOD,        // 好人
-        WEREWOLF,    // 狼人
-        VILLAGER,    // 平民
-        WITCH,       // 女巫
-        HUNTER,      // 猎人
-        GUARD,       // 守卫
-        MECHANICAL_WOLF  // 机械狼
+        // 好人阵营
+        SEER,           // 预言家
+        SEER_MIRROR,    // 通灵师
+        WITCH,          // 女巫
+        HUNTER,         // 猎人
+        GUARD,          // 守卫
+        KNIGHT,         // 骑士
+        IDIOT,          // 白痴
+        VILLAGER,       // 平民
+        GOOD,           // 好人（泛指）
+        // 狼人阵营
+        WEREWOLF,       // 狼人
+        WOLF_KING,      // 狼王
+        WOLF_BEAUTY,    // 狼美人
+        MECHANICAL_WOLF // 机械狼
     }
 
     enum class Role {
@@ -62,18 +69,23 @@ data class Player(
         return when (markedRole) {
             MarkedRole.NONE -> ""
             MarkedRole.SEER -> "预言"
+            MarkedRole.SEER_MIRROR -> "通灵"
             MarkedRole.GOOD -> "好人"
             MarkedRole.WEREWOLF -> "狼人"
+            MarkedRole.WOLF_KING -> "狼王"
+            MarkedRole.WOLF_BEAUTY -> "狼美"
             MarkedRole.VILLAGER -> "平民"
             MarkedRole.WITCH -> "女巫"
             MarkedRole.HUNTER -> "猎人"
             MarkedRole.GUARD -> "守卫"
+            MarkedRole.KNIGHT -> "骑士"
+            MarkedRole.IDIOT -> "白痴"
             MarkedRole.MECHANICAL_WOLF -> "机械狼"
         }
     }
 
     fun isMarkedEvil(): Boolean {
-        return markedRole in listOf(MarkedRole.WEREWOLF, MarkedRole.MECHANICAL_WOLF)
+        return markedRole in listOf(MarkedRole.WEREWOLF, MarkedRole.WOLF_KING, MarkedRole.WOLF_BEAUTY, MarkedRole.MECHANICAL_WOLF)
     }
 
     fun isEvil(): Boolean {
