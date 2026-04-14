@@ -75,16 +75,30 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderRightColumn() {
         val container = binding.rightColumnContainer
-        // Remove all dynamic views except add button
-        container.removeAllViews()
+
+        // Remove only player cards (not the add button)
+        // Find and remove views that are player cards (have playerNumber TextView)
+        val toRemove = mutableListOf<android.view.View>()
+        for (i in 0 until container.childCount) {
+            val child = container.getChildAt(i)
+            // Check if it's a player card (has playerNumber TextView) and not the add button
+            if (child.findViewById<TextView>(R.id.playerNumber) != null) {
+                toRemove.add(child)
+            }
+        }
+        toRemove.forEach { container.removeView(it) }
+
+        // Also clear from playerViews map for ID >= 7
+        playerViews.keys.filter { it >= 7 }.forEach { playerViews.remove(it) }
 
         // Get active players with ID >= 7
         val rightColumnPlayers = viewModel.getActivePlayers().filter { it.id >= 7 }.sortedBy { it.id }
 
-        // Add player cards dynamically
+        // Add player cards dynamically (insert before add button)
         rightColumnPlayers.forEach { player ->
             val playerCard = createPlayerCard(player.id)
-            container.addView(playerCard)
+            // Insert at the end but before add button (add button is last)
+            container.addView(playerCard, container.childCount - 1)
             playerViews[player.id] = playerCard
             setupPlayerCard(player.id, playerCard, player.id >= 13)
         }
