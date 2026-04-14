@@ -36,4 +36,11 @@
     <color name="role_villager">#FF22C55E</color> <!-- 平民 - 绿色 -->
     <color name="role_werewolf">#FFDC2626</color> <!-- 狼人 - 红色 -->
     <color name="role_mech_wolf">#FFB91C1C</color> <!-- 机械狼 - 深红 -->
+
+    <!-- 新增角色颜色 -->
+    <color name="role_seer_mirror">#FF06B6D4</color>  <!-- 通灵师 - 青色 -->
+    <color name="role_idiot">#FFA3A3A3</color>        <!-- 白痴 - 浅灰 -->
+    <color name="role_knight">#FFD4AF37</color>       <!-- 骑士 - 金色 -->
+    <color name="role_wolf_king">#FF7F1D1D</color>    <!-- 狼王 - 深红 -->
+    <color name="role_wolf_beauty">#FFBE185D</color>  <!-- 狼美人 - 粉红 -->
 </resources>
