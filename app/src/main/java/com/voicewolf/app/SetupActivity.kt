@@ -43,15 +43,18 @@ class SetupActivity : AppCompatActivity() {
     private fun selectPlayerCount(count: Int) {
         selectedPlayerCount = count
 
-        // Update button states
+        // Update button states - more visual contrast
         playerCountButtons.forEach { btn ->
-            if (btn.text.toString().toIntOrNull() == count) {
-                // Selected button - use filled style
-                btn.setBackgroundColor(resources.getColor(R.color.teal_700, null))
+            val buttonCount = btn.text.toString().replace("人", "").toIntOrNull()
+            if (buttonCount == count) {
+                // Selected button - filled style with bright color
+                btn.setBackgroundColor(resources.getColor(R.color.teal_200, null))
+                btn.setTextColor(resources.getColor(R.color.black, null))
                 btn.setStrokeWidth(0)
             } else {
-                // Unselected button - use outlined style
+                // Unselected button - outlined style
                 btn.setBackgroundColor(resources.getColor(R.color.info_panel, null))
+                btn.setTextColor(resources.getColor(R.color.gray_light, null))
                 btn.setStrokeWidth(2)
                 btn.setStrokeColorResource(R.color.border_default)
             }
