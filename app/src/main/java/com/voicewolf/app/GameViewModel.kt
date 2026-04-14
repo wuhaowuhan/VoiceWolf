@@ -34,9 +34,13 @@ class GameViewModel : ViewModel() {
     private val _allRecordsText = MutableLiveData("")
     val allRecordsText: LiveData<String> = _allRecordsText
 
+    // Current game setup
+    private val _currentSetup = MutableLiveData<GameSetup>()
+    val currentSetup: LiveData<GameSetup> = _currentSetup
+
     // Constants
     companion object {
-        const val MIN_PLAYERS = 8
+        const val MIN_PLAYERS = 12
         const val DEFAULT_PLAYERS = 12
         const val MAX_PLAYERS = 15
     }
@@ -131,7 +135,7 @@ class GameViewModel : ViewModel() {
     }
 
     // Reset game
-    fun resetGame() {
+    fun resetGame(keepSetup: Boolean = true) {
         _currentDay.value = 1
         _speechRecords.value = mutableListOf()
         _voteRecords.value = mutableListOf()
@@ -142,6 +146,16 @@ class GameViewModel : ViewModel() {
         _players.value = resetPlayers
         updateActivePlayerIds()
         updateDisplayInfo()
+
+        // Clear setup if not keeping
+        if (!keepSetup) {
+            _currentSetup.value = null
+        }
+    }
+
+    // Set game setup
+    fun setSetup(setup: GameSetup) {
+        _currentSetup.value = setup
     }
 
     // Speech record methods
