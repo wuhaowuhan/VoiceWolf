@@ -657,6 +657,8 @@ class MainActivity : AppCompatActivity() {
         TemplateButton("警徽流", "预言家", Player.MarkedRole.SEER, TemplateActionType.MULTI_SELECT),
         // 通灵师类
         TemplateButton("跳通灵", "通灵师", Player.MarkedRole.SEER_MIRROR, TemplateActionType.DIRECT_INSERT),
+        TemplateButton("查验X", "通灵师", Player.MarkedRole.SEER_MIRROR, TemplateActionType.CHECK_SELECT),
+        TemplateButton("警徽流", "通灵师", Player.MarkedRole.SEER_MIRROR, TemplateActionType.MULTI_SELECT),
         // 女巫类
         TemplateButton("跳女巫", "女巫", Player.MarkedRole.WITCH, TemplateActionType.DIRECT_INSERT),
         TemplateButton("银水X", "女巫", Player.MarkedRole.WITCH, TemplateActionType.SINGLE_SELECT),
