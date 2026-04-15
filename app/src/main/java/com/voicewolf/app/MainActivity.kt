@@ -173,7 +173,7 @@ class MainActivity : AppCompatActivity() {
     private fun observeViewModel() {
         // Observe current day
         viewModel.currentDay.observe(this) { day ->
-            binding.dayText.text = "第${day}天"
+            binding.dayText.text = viewModel.getDayDisplayText(day)
         }
 
         // Observe all records text
@@ -288,8 +288,8 @@ class MainActivity : AppCompatActivity() {
 
         // Create custom dialog view
         val dialogView = android.view.View.inflate(this, R.layout.dialog_mark_role, null)
-        val goodContainer = dialogView.findViewById<android.widget.LinearLayout>(R.id.goodRolesContainer)
-        val evilContainer = dialogView.findViewById<android.widget.LinearLayout>(R.id.evilRolesContainer)
+        val goodContainer = dialogView.findViewById<com.google.android.flexbox.FlexboxLayout>(R.id.goodRolesContainer)
+        val evilContainer = dialogView.findViewById<com.google.android.flexbox.FlexboxLayout>(R.id.evilRolesContainer)
 
         // Add good role buttons
         goodRoles.forEach { role ->
@@ -316,18 +316,19 @@ class MainActivity : AppCompatActivity() {
     private var roleDialog: AlertDialog? = null
 
     private fun addRoleButton(
-        container: android.widget.LinearLayout,
+        container: com.google.android.flexbox.FlexboxLayout,
         role: Player.MarkedRole,
         playerId: Int,
         currentRole: Player.MarkedRole
     ) {
         val button = com.google.android.material.button.MaterialButton(this).apply {
             text = role.getMarkedRoleDisplayName()
-            layoutParams = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
+                com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
+                com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 setMargins(4, 4, 4, 4)
+                flexBasisPercent = -1f
             }
 
             // Highlight if currently selected
@@ -375,7 +376,7 @@ class MainActivity : AppCompatActivity() {
         val spinnerPlayer = dialogView.findViewById<android.widget.Spinner>(R.id.spinnerPlayer)
         val editContent = dialogView.findViewById<android.widget.EditText>(R.id.editContent)
 
-        val currentDay = viewModel.currentDay.value ?: 1
+        val currentDay = viewModel.currentDay.value ?: 0
         val setup = viewModel.currentSetup.value
 
         // Create template buttons based on setup
@@ -403,7 +404,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         AlertDialog.Builder(this)
-            .setTitle("记录发言 - 第${currentDay}天")
+            .setTitle("记录发言 - ${viewModel.getDayDisplayText(currentDay)}")
             .setView(dialogView)
             .setPositiveButton("保存") { _, _ ->
                 val selectedIndex = spinnerPlayer.selectedItemPosition
@@ -423,7 +424,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showAddVoteDialog() {
         val dialogBinding = DialogAddVoteBinding.inflate(layoutInflater)
-        val currentDay = viewModel.currentDay.value ?: 1
+        val currentDay = viewModel.currentDay.value ?: 0
 
         // Get active players dynamically
         val activePlayers = viewModel.getActivePlayers()
@@ -483,7 +484,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         AlertDialog.Builder(this)
-            .setTitle("记录投票 - 第${currentDay}天")
+            .setTitle("记录投票 - ${viewModel.getDayDisplayText(currentDay)}")
             .setView(dialogBinding.root)
             .setPositiveButton("完成") { _, _ ->
                 val targetPosition = dialogBinding.spinnerTarget.selectedItemPosition
@@ -510,7 +511,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             val sb = StringBuilder()
             allDays.forEach { day ->
-                sb.append("═══ 第${day}天 ═══\n\n")
+                sb.append("═══ ${viewModel.getDayDisplayText(day)} ═══\n\n")
 
                 // Speech records
                 val speeches = viewModel.getSpeechRecordsForDay(day)
@@ -581,14 +582,14 @@ class MainActivity : AppCompatActivity() {
         input.setText(viewModel.currentDay.value.toString())
 
         AlertDialog.Builder(this)
-            .setTitle("跳转到指定天")
+            .setTitle("跳转到指定阶段（0=警上）")
             .setView(input)
             .setPositiveButton("确定") { _, _ ->
                 val day = input.text.toString().toIntOrNull()
-                if (day != null && day >= 1) {
+                if (day != null && day >= 0) {
                     viewModel.setDay(day)
                 } else {
-                    Toast.makeText(this, "请输入有效的天数", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "请输入有效的天数（0为警上）", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("取消", null)
@@ -725,9 +726,11 @@ class MainActivity : AppCompatActivity() {
             visibleButtons.forEach { btn ->
                 val button = com.google.android.material.button.MaterialButton(this).apply {
                     text = btn.text
+                    textSize = 12f
                     layoutParams = android.widget.LinearLayout.LayoutParams(
+                        0,
                         android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                        1f
                     ).apply {
                         setMargins(4, 4, 4, 4)
                     }
@@ -767,7 +770,7 @@ class MainActivity : AppCompatActivity() {
                 showMultiSelectDialog(btn.text, editText)
             }
             TemplateActionType.CHECK_SELECT -> {
-                showCheckSelectDialog(editText)
+                showCheckSelectDialog(btn.text, editText)
             }
         }
     }
@@ -782,6 +785,8 @@ class MainActivity : AppCompatActivity() {
         val dialogView = android.view.View.inflate(this, R.layout.dialog_select_number, null)
         val gridLayout = dialogView.findViewById<android.widget.GridLayout>(R.id.numbersGrid)
 
+        var selectedId: Int? = null
+
         // Populate grid with player numbers
         val activePlayers = viewModel.getActivePlayers()
         activePlayers.forEach { player ->
@@ -794,9 +799,16 @@ class MainActivity : AppCompatActivity() {
                     setMargins(4, 4, 4, 4)
                 }
                 setOnClickListener {
-                    val resultText = "${templateName}${player.id}号 "
-                    appendToEditText(editText, resultText)
-                    (dialogView.parent as? android.app.Dialog)?.dismiss()
+                    // Update selection state
+                    selectedId = player.id
+                    // Reset all buttons' stroke
+                    for (i in 0 until gridLayout.childCount) {
+                        val child = gridLayout.getChildAt(i) as? com.google.android.material.button.MaterialButton
+                        child?.strokeWidth = 0
+                    }
+                    // Highlight selected button
+                    strokeWidth = 2
+                    strokeColor = resources.getColorStateList(R.color.white, null)
                 }
             }
             gridLayout.addView(button)
@@ -804,6 +816,13 @@ class MainActivity : AppCompatActivity() {
 
         AlertDialog.Builder(this)
             .setView(dialogView)
+            .setPositiveButton("确认") { _, _ ->
+                selectedId?.let { id ->
+                    // Replace X in template name with the selected number
+                    val resultText = templateName.replace("X", "${id}号") + " "
+                    appendToEditText(editText, resultText)
+                }
+            }
             .setNegativeButton("取消", null)
             .show()
     }
@@ -845,7 +864,9 @@ class MainActivity : AppCompatActivity() {
             .setView(dialogView)
             .setPositiveButton("确认") { _, _ ->
                 if (selectedIds.isNotEmpty()) {
-                    val resultText = "${templateName} ${selectedIds.sorted().joinToString("号 ") { "$it" }}号 "
+                    // Replace X in template name with the selected numbers
+                    val numbersText = selectedIds.sorted().joinToString("号 ") { "$it" } + "号"
+                    val resultText = templateName.replace("X", numbersText) + " "
                     appendToEditText(editText, resultText)
                 }
             }
@@ -853,7 +874,7 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun showCheckSelectDialog(editText: android.widget.EditText) {
+    private fun showCheckSelectDialog(templateName: String, editText: android.widget.EditText) {
         val dialogView = android.view.View.inflate(this, R.layout.dialog_select_check, null)
         val gridLayout = dialogView.findViewById<android.widget.GridLayout>(R.id.numbersGrid)
         val btnGood = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnGood)
@@ -909,7 +930,8 @@ class MainActivity : AppCompatActivity() {
             .setView(dialogView)
             .setPositiveButton("确认") { _, _ ->
                 if (selectedPlayerId != null && selectedResult != null) {
-                    val resultText = "查验${selectedPlayerId}号 $selectedResult "
+                    // Replace X in template name with player number and result
+                    val resultText = templateName.replace("X", "${selectedPlayerId}号($selectedResult)") + " "
                     appendToEditText(editText, resultText)
                 } else {
                     Toast.makeText(this, "请选择玩家和查验结果", Toast.LENGTH_SHORT).show()

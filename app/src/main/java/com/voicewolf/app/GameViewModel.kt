@@ -10,8 +10,8 @@ import androidx.lifecycle.ViewModel
  */
 class GameViewModel : ViewModel() {
 
-    // Current day
-    private val _currentDay = MutableLiveData(1)
+    // Current day (0 = 警上, 1 = 第1天, 2 = 第2天...)
+    private val _currentDay = MutableLiveData(0)
     val currentDay: LiveData<Int> = _currentDay
 
     // Players - now supports dynamic count (8-15)
@@ -123,25 +123,31 @@ class GameViewModel : ViewModel() {
 
     // Day management
     fun nextDay() {
-        _currentDay.value = (_currentDay.value ?: 1) + 1
+        _currentDay.value = (_currentDay.value ?: 0) + 1
     }
 
     fun prevDay() {
-        val current = _currentDay.value ?: 1
-        if (current > 1) {
+        val current = _currentDay.value ?: 0
+        if (current > 0) {
             _currentDay.value = current - 1
         }
     }
 
     fun setDay(day: Int) {
-        if (day >= 1) {
+        if (day >= 0) {
             _currentDay.value = day
         }
     }
 
+    // Get display text for current day
+    fun getDayDisplayText(): String {
+        val day = _currentDay.value ?: 0
+        return if (day == 0) "警上" else "第${day}天"
+    }
+
     // Reset game
     fun resetGame(keepSetup: Boolean = true) {
-        _currentDay.value = 1
+        _currentDay.value = 0  // Reset to 警上
         _speechRecords.value = mutableListOf()
         _voteRecords.value = mutableListOf()
         _allRecordsText.value = ""
@@ -235,7 +241,7 @@ class GameViewModel : ViewModel() {
 
         val sb = StringBuilder()
         allDays.forEach { day ->
-            sb.append("【第${day}天】\n")
+            sb.append("【${getDayDisplayText(day)}】\n")
 
             // Speech records
             val speeches = getSpeechRecordsForDay(day)
@@ -305,6 +311,11 @@ class GameViewModel : ViewModel() {
         val speechDays = _speechRecords.value?.map { it.day } ?: emptyList()
         val voteDays = _voteRecords.value?.map { it.day } ?: emptyList()
         return (speechDays + voteDays).distinct().sorted()
+    }
+
+    // Get display text for a specific day
+    fun getDayDisplayText(day: Int): String {
+        return if (day == 0) "警上" else "第${day}天"
     }
 
     // Player status
