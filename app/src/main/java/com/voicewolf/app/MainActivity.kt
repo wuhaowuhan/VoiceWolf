@@ -109,6 +109,12 @@ class MainActivity : AppCompatActivity() {
     private fun createPlayerCard(playerId: Int): android.view.View {
         val binding = ItemPlayerBinding.inflate(layoutInflater)
         binding.playerNumber.text = playerId.toString()
+        // Set fixed size (51dp) to match layout XML
+        val sizePx = (51 * resources.displayMetrics.density).toInt()
+        val marginPx = (4 * resources.displayMetrics.density).toInt()
+        binding.root.layoutParams = android.widget.LinearLayout.LayoutParams(sizePx, sizePx).apply {
+            setMargins(marginPx, marginPx, marginPx, marginPx)
+        }
         return binding.root
     }
 

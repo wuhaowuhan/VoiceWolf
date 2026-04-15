@@ -60,7 +60,8 @@
             android:layout_height="0dp"
             android:gravity="center_vertical"
             android:orientation="vertical"
-            android:padding="8dp"
+            android:paddingVertical="8dp"
+            android:paddingHorizontal="0dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -68,43 +69,43 @@
             <include
                 android:id="@+id/player1"
                 layout="@layout/item_player"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
+                android:layout_width="51dp"
+                android:layout_height="51dp"
                 android:layout_margin="4dp" />
 
             <include
                 android:id="@+id/player2"
                 layout="@layout/item_player"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
+                android:layout_width="51dp"
+                android:layout_height="51dp"
                 android:layout_margin="4dp" />
 
             <include
                 android:id="@+id/player3"
                 layout="@layout/item_player"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
+                android:layout_width="51dp"
+                android:layout_height="51dp"
                 android:layout_margin="4dp" />
 
             <include
                 android:id="@+id/player4"
                 layout="@layout/item_player"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
+                android:layout_width="51dp"
+                android:layout_height="51dp"
                 android:layout_margin="4dp" />
 
             <include
                 android:id="@+id/player5"
                 layout="@layout/item_player"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
+                android:layout_width="51dp"
+                android:layout_height="51dp"
                 android:layout_margin="4dp" />
 
             <include
                 android:id="@+id/player6"
                 layout="@layout/item_player"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
+                android:layout_width="51dp"
+                android:layout_height="51dp"
                 android:layout_margin="4dp" />
         </LinearLayout>
 
@@ -115,7 +116,8 @@
             android:layout_height="0dp"
             android:gravity="center_vertical"
             android:orientation="vertical"
-            android:padding="8dp"
+            android:paddingVertical="8dp"
+            android:paddingHorizontal="0dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -128,7 +130,7 @@
             android:id="@+id/centerPanel"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_margin="8dp"
+            android:layout_margin="2dp"
             app:cardBackgroundColor="@color/info_panel"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp"

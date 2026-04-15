@@ -1,7 +1,22 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./gradlew assembleDebug --warning-mode all)"
+      "Bash(./gradlew assembleDebug --warning-mode all)",
+      "Bash(./gradlew compileDebugKotlin --console=plain)",
+      "Bash(./gradlew.bat compileDebugKotlin --console=plain)",
+      "Bash(gradle compileDebugKotlin --console=plain)",
+      "Bash(./gradlew compileDebugKotlin)",
+      "Bash(gradlew.bat compileDebugKotlin)",
+      "Bash(D:\\\\Android project\\\\VoiceWolf\\\\gradlew.bat compileDebugKotlin:*)",
+      "Bash(./gradlew.bat compileDebugKotlin)",
+      "Bash(gradle compileDebugKotlin --no-daemon)",
+      "Bash(./gradlew assembleDebug)",
+      "Bash(cmd.exe /c \"gradlew.bat assembleDebug\")",
+      "Bash(D:/Android project/VoiceWolf/gradlew.bat assembleDebug:*)",
+      "Bash(where gradle:*)",
+      "Bash(gradle wrapper:*)",
+      "Read(//c/Program Files/**)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\" bash ./gradlew assembleDebug --no-daemon)"
     ]
   }
 }
