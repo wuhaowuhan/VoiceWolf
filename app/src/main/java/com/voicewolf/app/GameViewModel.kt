@@ -1,5 +1,11 @@
 package com.voicewolf.app
 
+import android.graphics.Color
+import android.graphics.Typeface
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -30,9 +36,9 @@ class GameViewModel : ViewModel() {
     private val _voteRecords = MutableLiveData<MutableList<VoteRecord>>(mutableListOf())
     val voteRecords: LiveData<MutableList<VoteRecord>> = _voteRecords
 
-    // Display info - all records formatted
-    private val _allRecordsText = MutableLiveData("")
-    val allRecordsText: LiveData<String> = _allRecordsText
+    // Display info - all records formatted as rich text
+    private val _allRecordsText = MutableLiveData<CharSequence>("")
+    val allRecordsText: LiveData<CharSequence> = _allRecordsText
 
     // Current game setup (nullable - may not be set yet)
     private val _currentSetup = MutableLiveData<GameSetup?>()
@@ -230,7 +236,7 @@ class GameViewModel : ViewModel() {
         updateDisplayInfo()
     }
 
-    // Update display info - all days
+    // Update display info - all days with rich text formatting
     private fun updateDisplayInfo() {
         val allDays = getAllDays()
 
@@ -239,51 +245,82 @@ class GameViewModel : ViewModel() {
             return
         }
 
-        val sb = StringBuilder()
-        allDays.forEach { day ->
-            sb.append("【${getDayDisplayText(day)}】\n")
+        val sb = SpannableStringBuilder()
+        val colorRed    = Color.parseColor("#FF6B6B")  // 被投号码 - 亮红
+        val colorWhite  = Color.WHITE
+        val colorBlue   = Color.parseColor("#60A5FA")  // 区块标签 - 蓝
+        val colorGray   = Color.parseColor("#B0B0B0")  // 发言内容 - 浅灰
+        val colorDimGray = Color.parseColor("#6B7280") // 投票人号、箭头 - 暗灰
 
-            // Speech records
+        fun SpannableStringBuilder.appendColored(text: String, color: Int): SpannableStringBuilder {
+            val start = length
+            append(text)
+            setSpan(ForegroundColorSpan(color), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            return this
+        }
+
+        fun SpannableStringBuilder.appendBold(text: String, color: Int): SpannableStringBuilder {
+            val start = length
+            append(text)
+            setSpan(ForegroundColorSpan(color), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(StyleSpan(Typeface.BOLD), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            return this
+        }
+
+        allDays.forEachIndexed { index, day ->
+            if (index > 0) sb.append("\n")
+
+            // Day header: bold white
+            sb.appendBold("【${getDayDisplayText(day)}】", colorWhite)
+            sb.append("\n")
+
             val speeches = getSpeechRecordsForDay(day)
-            sb.append("📝 发言: ")
-            if (speeches.isEmpty()) {
-                sb.append("无\n")
-            } else {
-                sb.append("\n")
+            val votes = getVoteRecordsForDay(day)
+
+            // Speech section
+            if (speeches.isNotEmpty()) {
+                sb.appendColored("📝 发言\n", colorBlue)
                 speeches.forEach { record ->
-                    sb.append("  ${record.playerId}号: ${record.summary}\n")
+                    sb.append("  ")
+                    sb.appendColored("${record.playerId}号", colorWhite)
+                    sb.appendColored(": ${record.summary}\n", colorGray)
                 }
             }
 
-            // Vote records
-            val votes = getVoteRecordsForDay(day)
-            sb.append("🗳️ 投票: ")
-            if (votes.isEmpty()) {
-                sb.append("无\n")
-            } else {
-                sb.append("\n")
-                // Vote info
+            // Vote section
+            if (votes.isNotEmpty()) {
+                sb.appendColored("🗳️ 投票\n", colorBlue)
+
+                // Vote arrows line: "  N→M  N→M"
                 sb.append("  ")
                 votes.forEach { record ->
-                    sb.append("${record.voterId}→${record.targetId}  ")
+                    sb.appendColored("${record.voterId}", colorDimGray)
+                    sb.appendColored("→", colorDimGray)
+                    sb.appendColored("${record.targetId}", colorRed)
+                    sb.append("  ")
                 }
                 sb.append("\n")
-                // Vote stats
+
+                // Vote stats: "  3号×2  5号×1"
                 val voteCounts = mutableMapOf<Int, Int>()
                 votes.forEach { voteCounts[it.targetId] = voteCounts.getOrDefault(it.targetId, 0) + 1 }
                 if (voteCounts.isNotEmpty()) {
-                    sb.append("  统计: ")
-                    sb.append(voteCounts.entries.sortedByDescending { it.value }.joinToString("  ") {
-                        "${it.key}号(${it.value}票)"
-                    })
+                    sb.append("  ")
+                    voteCounts.entries.sortedByDescending { it.value }.forEach { (targetId, count) ->
+                        sb.appendColored("${targetId}号", colorRed)
+                        sb.appendColored("×${count}  ", colorGray)
+                    }
                     sb.append("\n")
                 }
             }
 
-            sb.append("\n")
+            // Both empty
+            if (speeches.isEmpty() && votes.isEmpty()) {
+                sb.appendColored("  （暂无）\n", colorDimGray)
+            }
         }
 
-        _allRecordsText.value = sb.toString().trim()
+        _allRecordsText.value = sb
     }
 
     // Helper methods

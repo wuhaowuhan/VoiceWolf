@@ -509,49 +509,72 @@ class MainActivity : AppCompatActivity() {
         if (allDays.isEmpty()) {
             dialogBinding.historyContent.text = "暂无历史记录"
         } else {
-            val sb = StringBuilder()
-            allDays.forEach { day ->
-                sb.append("═══ ${viewModel.getDayDisplayText(day)} ═══\n\n")
+            val colorRed     = android.graphics.Color.parseColor("#FF6B6B")
+            val colorWhite   = android.graphics.Color.WHITE
+            val colorBlue    = android.graphics.Color.parseColor("#60A5FA")
+            val colorGray    = android.graphics.Color.parseColor("#B0B0B0")
+            val colorDimGray = android.graphics.Color.parseColor("#6B7280")
 
-                // Speech records
+            val sb = android.text.SpannableStringBuilder()
+
+            fun appendColored(text: String, color: Int) {
+                val start = sb.length
+                sb.append(text)
+                sb.setSpan(android.text.style.ForegroundColorSpan(color), start, sb.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+
+            fun appendBold(text: String, color: Int) {
+                val start = sb.length
+                sb.append(text)
+                sb.setSpan(android.text.style.ForegroundColorSpan(color), start, sb.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                sb.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, sb.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+
+            allDays.forEachIndexed { index, day ->
+                if (index > 0) sb.append("\n")
+
+                appendBold("═══ ${viewModel.getDayDisplayText(day)} ═══\n", colorWhite)
+
                 val speeches = viewModel.getSpeechRecordsForDay(day)
                 if (speeches.isNotEmpty()) {
-                    sb.append("【发言】\n")
+                    appendColored("📝 发言\n", colorBlue)
                     speeches.forEach { record ->
-                        sb.append("${record.playerId}号: ${record.summary}\n\n")
+                        appendColored("${record.playerId}号", colorWhite)
+                        appendColored(": ${record.summary}\n\n", colorGray)
                     }
                 }
 
-                // Vote records
                 val votes = viewModel.getVoteRecordsForDay(day)
                 if (votes.isNotEmpty()) {
-                    sb.append("【投票】\n")
+                    appendColored("🗳️ 投票\n", colorBlue)
                     votes.forEach { record ->
+                        appendColored("${record.voterId}号", colorDimGray)
                         if (record.targetId == 0) {
-                            sb.append("${record.voterId}号: 弃票\n")
+                            appendColored(" → 弃票\n", colorDimGray)
                         } else {
-                            sb.append("${record.voterId}号 → ${record.targetId}号\n")
+                            appendColored(" → ", colorDimGray)
+                            appendColored("${record.targetId}号\n", colorRed)
                         }
                     }
                     sb.append("\n")
 
-                    // Vote stats for this day
                     val voteCounts = mutableMapOf<Int, Int>()
                     votes.filter { it.targetId > 0 }.forEach {
                         voteCounts[it.targetId] = voteCounts.getOrDefault(it.targetId, 0) + 1
                     }
                     if (voteCounts.isNotEmpty()) {
-                        sb.append("统计: ")
-                        sb.append(voteCounts.entries.sortedByDescending { it.value }.joinToString("  ") {
-                            "${it.key}号(${it.value}票)"
-                        })
+                        appendColored("统计: ", colorBlue)
+                        voteCounts.entries.sortedByDescending { it.value }.forEachIndexed { i, (targetId, count) ->
+                            if (i > 0) sb.append("  ")
+                            appendColored("${targetId}号", colorRed)
+                            appendColored("×${count}", colorGray)
+                        }
                         sb.append("\n")
                     }
                 }
-
-                sb.append("\n")
             }
-            dialogBinding.historyContent.text = sb.toString()
+
+            dialogBinding.historyContent.text = sb
         }
 
         AlertDialog.Builder(this)

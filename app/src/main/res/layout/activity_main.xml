@@ -150,7 +150,9 @@
                     android:layout_height="wrap_content"
                     android:text="暂无记录"
                     android:textColor="@color/gray_light"
-                    android:textSize="13sp" />
+                    android:textSize="12sp"
+                    android:lineSpacingMultiplier="1.5"
+                    android:lineSpacingExtra="1dp" />
             </ScrollView>
         </androidx.cardview.widget.CardView>
     </androidx.constraintlayout.widget.ConstraintLayout>
